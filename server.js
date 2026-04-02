@@ -12,7 +12,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.get("/", (req, res) => {
   res.json({ 
     message: "Edu-Planning Gemini API",
-    version: "2.1",
+    version: "2",
     status: " Online",
     routes: {
       "POST /api/generate-plan": "Generate a schedule (7 days)",
