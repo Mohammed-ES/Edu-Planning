@@ -117,12 +117,6 @@ COMMENT='Raw Gemini API responses for audit trail';
 -- =====================================================
 -- TABLE 6: LOGS (Activity Audit Trail)
 -- =====================================================
--- action values:
--- - note_added, note_edited, note_deleted
--- - module_added, module_deleted
--- - plan_generated
--- - login, logout
--- - etc.
 CREATE TABLE logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -135,15 +129,6 @@ CREATE TABLE logs (
     INDEX idx_created (created_at DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Activity log for audit trail and monitoring';
-
--- =====================================================
--- INDEXES SUMMARY
--- =====================================================
--- User lookups: idx_username, idx_email
--- Module queries: idx_user_id (on modules)
--- Note filtering: idx_module_id, idx_module_created
--- Plan queries: idx_user_date
--- Log queries: idx_user_id, idx_action, idx_created
 
 -- =====================================================
 -- INSERTION DE DONNEES TEST (Optionnel)
@@ -165,31 +150,4 @@ SELECT id, 'Bonne compréhension de la mécanique, besoin de pratique sur la the
 UNION ALL
 SELECT id, 'Excellent en chimie organique, lutte avec les réactions inorganiques', 'Notes en chimie' FROM modules WHERE module_name = 'Chimie';
 
--- =====================================================
--- CHANGES FROM OLD SCHEMA
--- =====================================================
-/*
-SUPPRIMÉ (Removed):
-  ✗ Table: api_tokens (Google OAuth cleanup)
-  ✗ Column: notes.note_value as DECIMAL (error - stored grades not notes)
-  ✗ Column: revision_plans.module_id (moved to JSON)
-  ✗ Column: revision_plans.duration_per_day (moved to JSON)
 
-AJOUTÉ (Added):
-  ✓ Column: notes.note_value as TEXT (stores observations)
-  ✓ Column: notes.updated_at
-  ✓ Column: revision_plans.plan_data (JSON)
-  ✓ Column: revision_plans.used_note_ids (JSON - audit)
-  ✓ Column: revision_plans.selected_modules (JSON - audit)
-  ✓ Column: logs.details
-  ✓ Index: idx_module_created on notes
-  ✓ Index: idx_user_date on revision_plans
-  ✓ Index: idx_action on logs
-  ✓ Role column on users
-  ✓ Comprehensive comments
-
-STRUCTURE (JSON in plan_data):
-  Duration formatting (minutes) → Display as "1h 30min"
-  Note selection (multi-select) → Track in used_note_ids
-  Module selection → Track in selected_modules
-*/
