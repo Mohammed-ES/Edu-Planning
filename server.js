@@ -128,3 +128,4 @@ app.listen(PORT, () => {
   console.log(`📅 POST http://localhost:${PORT}/api/generate-plan`);
   console.log(`💚 Health check: http://localhost:${PORT}/health`);
 });
+
