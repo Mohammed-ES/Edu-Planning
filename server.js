@@ -10,7 +10,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Home route
 app.get("/", (req, res) => {
-  res.json({ 
+  res.json({
     message: "Edu-Planning Gemini API",
     version: "2",
     status: " Online",
@@ -105,7 +105,7 @@ app.get("/health", (req, res) => {
 
 // Error handling for 404 routes
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: `Route ${req.method} ${req.path} not found`,
     available_routes: [
       "POST /api/generate-plan",

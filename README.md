@@ -1,502 +1,365 @@
-# 🎓 Edu-Planning 
+# 🎓 Edu-Planning — UCA Academic Planner
 
-> **Intelligent Study Planning with AI**
+> **Intelligent Study Planning powered by Google Gemini AI**
 >
-> Transform your study notes into personalized 7-day revision plans powered by Google Gemini AI.
+> Transform your study notes into personalized 7-day revision plans with AI analysis.
 >
-> *Academic Project - Université Cadi Ayyad*
+> *Academic Project — Université Cadi Ayyad (UCA), Marrakech*
+
+<p align="center">
+  <img src="https://img.shields.io/badge/PHP-8.2-777BB4?style=flat-square&logo=php" />
+  <img src="https://img.shields.io/badge/Node.js-16%2B-339933?style=flat-square&logo=nodedotjs" />
+  <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql" />
+  <img src="https://img.shields.io/badge/Gemini-AI-8E75B2?style=flat-square&logo=google" />
+  <img src="https://img.shields.io/badge/Express-5.2-000000?style=flat-square&logo=express" />
+  <img src="https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=flat-square" />
+</p>
 
 ---
 
 ## 📌 What is Edu-Planning?
 
-**Edu-Planning** helps students optimize their revision schedules through intelligent AI analysis. Input your study notes and module observations, let Gemini AI analyze patterns, and receive personalized 7-day revision schedules.
+**Edu-Planning** is a smart academic management platform for UCA students. It allows students to organize their modules and notes, then uses **Google Gemini AI** to generate optimized 7-day revision schedules based on their actual study observations.
 
-### 🎯 Core Objective
-
-Transform **raw student observations** → **AI analysis** → **optimized revision plans**
+### 🎯 Student Journey
 
 ```
-Student Journey:
-┌─────────────────────────────────────────────────────┐
-│  1️⃣ Create Module  →  2️⃣ Add Notes  →  3️⃣ AI Plans  │
-└─────────────────────────────────────────────────────┘
+  1️⃣ Register / Login
+         ↓
+  2️⃣ Create Modules (Math, Physics, etc.)
+         ↓
+  3️⃣ Add Study Notes (difficulties, observations)
+         ↓
+  4️⃣ Generate AI Plan (via Recommendations page)
+         ↓
+  5️⃣ View 7-Day Schedule (Calendar + Sessions)
+         ↓
+  6️⃣ Track Progress (Dashboard + Logs)
 ```
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-| Feature | Purpose | Status |
-|---------|---------|--------|
-| 🔐 Secure Authentication | Session-based login system | ✓ |
-| 📚 Module Management | Create & organize subjects | ✓ |
-| 📝 Study Notes | Record difficulties & observations | ✓ |
-| 🤖 AI Planning | Generate intelligent schedules | ✓ |
-| 📊 Dashboard | Track study progress | ✓ |
-| 📆 Calendar View | Visualize your plan | ✓ |
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🔐 Secure Authentication | Session-based login with CSRF & XSS protection | ✅ Live |
+| 📚 Module Management | Create, edit & delete academic subjects | ✅ Live |
+| 📝 Study Notes | Record difficulties & observations per module | ✅ Live |
+| 🤖 Gemini AI Planning | Generate personalized 7-day revision plans | ✅ Live |
+| 📊 Dashboard | Statistics: modules, notes, sessions, days left | ✅ Live |
+| 📆 Calendar View | Visualize sessions by day with colors & priorities | ✅ Live |
+| 📋 Recommendation History | Browse and delete past AI-generated plans | ✅ Live |
+| 👤 User Profile | Edit profile & change password | ✅ Live |
+| 🔍 Activity Logs | Full audit trail of user actions | ✅ Live |
+| 🏥 Health Check | System diagnostics for all components | ✅ Live |
+| 🐳 Docker Support | Run full stack with `docker-compose up` | ✅ Live |
 
 ---
 
 ## 🏗️ Technology Stack
 
-### Frontend Layer
+### Frontend (Presentation Layer)
 ```
-┌─────────────────────────────────────────┐
-│  PHP 8.2  │  HTML5  │  CSS3  │  JS ES6+ │
-│  Bootstrap 5  │  FontAwesome 6           │
-└─────────────────────────────────────────┘
+  PHP 8.2  ·  HTML5  ·  CSS3  ·  JavaScript ES6+
+  Vanilla CSS (UCA Design System)  ·  FontAwesome 6
 ```
 - **Server-Side Rendering** via PHP
-- **Responsive Design** with Bootstrap
-- **Smooth Animations** with CSS + JavaScript
-- **Session Management** for user authentication
+- **UCA Brand Colors**: Brun Terracotta `#8B4513`, Brun Foncé `#5C2E0E`, Orange Chaud `#C0622A`
+- **Smooth Animations** with custom CSS keyframes (`assets/animations.css`)
+- **Session-Based Auth** with `PHPSESSID` cookie
 
-### Backend Layer
+### Backend (API Layer)
 ```
-┌──────────────────────────────────┐
-│  Node.js 16+ LTS  │  Express 5.2 │
-│  GoogleGenerativeAI SDK          │
-└──────────────────────────────────┘
+  Node.js 16+ LTS  ·  Express.js 5.2.1
+  @google/generative-ai SDK 0.24.1
 ```
-- **REST API Server** on Port 3001
-- **AI Integration** with Gemini 2.5 Flash
-- **JSON Processing** for planning data
+- **REST API** running on port `3001`
+- **Gemini 2.5 Flash** model for AI planning
+- **ESM Modules** (`"type": "module"` in package.json)
 
 ### Data Layer
 ```
-┌────────────────────┐
-│  MySQL 8.0         │
-│  Ports: 3306/3307  │
-│  6 Tables          │
-└────────────────────┘
+  MySQL 8.0
+  Port 3306 (XAMPP) / 3307 (Docker)
+  6 relational tables
 ```
-- **Relational Database** for user data
-- **JSON Storage** for complex planning objects
-- **Indexed Queries** for performance
 
 ---
 
-## 🔒 Security & Configuration
+## 📁 Project Structure
 
-### 🛡️ Security Principles
+```
+Edu-Planning/
+│
+├── 📄 index.php              # Landing page (hero + features)
+├── 📄 login.php              # Login form
+├── 📄 register.php           # Registration form
+├── 📄 logout.php             # Session destroy + redirect
+├── 📄 dashboard.php          # Main dashboard (stats + quick links)
+├── 📄 modules.php            # Module & notes management (CRUD)
+├── 📄 planning.php           # Calendar view of generated plans
+├── 📄 recommendations.php    # AI planning generator + history
+├── 📄 profile.php            # User profile edit
+├── 📄 logs.php               # Activity audit trail
+├── 📄 health_check.php       # System diagnostics
+│
+├── 🔐 config.php             # DB connection (PDO) + env loading
+├── 🔒 auth.php               # require_login() helper
+├── 🔒 auth-helper.php        # Hash, session, access control
+│
+├── 🟢 server.js              # Node.js Express API (Gemini AI)
+├── 📦 package.json           # Node.js dependencies
+│
+├── 🗄️ schema.sql             # MySQL database schema (6 tables)
+├── 🐳 docker-compose.yml     # Docker: PHP + MySQL + Node
+│
+├── 🌐 assets/
+│   ├── style.css             # Main stylesheet (UCA Design System)
+│   ├── animations.css        # Keyframes & transitions
+│   ├── app.js                # Client-side JS (AJAX, DOM, events)
+│   └── images/               # Logos & icons
+│
+├── 🔑 .env                   # ⚠️ Git-ignored — secrets here
+├── 📋 .env.example           # Template for environment setup
+├── 🚫 .gitignore             # Excludes .env, node_modules, etc.
+│
+├── 📚 README.md              # This file
+└── 🏗️ ARCHITECTURE.md        # Full architecture guide
+```
 
-1. **API Keys Protection**
-   - ✓ Never hardcoded in source
-   - ✓ Loaded from `.env` file
-   - ✓ Environment variables only
+---
 
-2. **Database Credentials**
-   - ✓ Stored in `.env` (git-ignored)
-   - ✓ PDO prepared statements (prevent SQL injection)
-   - ✓ Password hashing with PHP `password_hash()`
+## 🔒 Security
 
-3. **Frontend Security**
-   - ✓ Session-based authentication
-   - ✓ XSS protection via `htmlspecialchars()`
-   - ✓ CSRF token validation
+### Security Principles
 
-4. **Code Quality**
-   - ✓ No hardcoded credentials
-   - ✓ No exposed API keys
-   - ✓ Audit logging of all actions
+1. **API Keys & Credentials** — Loaded from `.env` (git-ignored), never hardcoded
+2. **SQL Injection** — PDO prepared statements everywhere
+3. **Password Security** — `password_hash()` / `password_verify()` (bcrypt)
+4. **XSS Protection** — `htmlspecialchars()` on all user-generated output
+5. **CSRF Tokens** — Validated on all form submissions
+6. **Session Security** — `HttpOnly`, `SameSite: Strict`, 1-hour timeout
+7. **Audit Logs** — All user actions logged to `logs` table
 
-### ⚙️ Configuration
+### Environment Configuration
 
-Create `.env` file in project root (git-ignored):
+Copy `.env.example` to `.env` and fill in your values:
 
 ```env
-# Database Configuration
+# Database
 DB_HOST=localhost
-DB_PORT=3307
+DB_PORT=3306
 DB_USER=root
 DB_PASS=your_password_here
 DB_NAME=edu_planning
 
-# API Configuration
+# Google Gemini API (from Google AI Studio)
+GEMINI_API_KEY=YOUR_GEMINI_KEY_HERE
+
+# Node.js API Server
 API_SERVER=http://localhost:3001
 API_TIMEOUT=30
 
-# Google APIs (from Google AI Studio)
-GEMINI_API_KEY=YOUR_KEY_HERE
-
-# Session Configuration
+# Session
 SESSION_TIMEOUT=3600
 SESSION_SECURE=false
 ```
 
-**⚠️ Important**: Never commit `.env` to Git. Add to `.gitignore`:
-```
-.env
-.env.local
-.env.*.local
-config.php
-```
-
----
-
-## 🔐 Sessions & Cookies
-
-### 📚 What are Sessions & Cookies?
-
-#### Sessions
-
-**Definition**: Server-side mechanism to maintain user state across multiple HTTP requests.
-
-```
-Session = Server's memory of who you are
-
-How it works:
-Browser                          Server
-  │                               │
-  ├─ Sends login (username, pwd) ─→ │
-  │                               │
-  │ ← Creates session (random ID) ─┤
-  │   Stores in /tmp/sess_xxxxx   │
-  │                               │
-  ├─ Sends PHPSESSID cookie ────→ │
-  │   (identifies the session)     │
-  │                               │
-  ├─ Each request includes ──────→ │
-  │   PHPSESSID cookie             │
-  │   Server recognizes user       │
-  │                               │
-```
-
-**Key Points:**
-- `$_SESSION['user_id']` = User data stored server-side
-- `PHPSESSID` = Cookie that identifies the session
-- Session file = `/tmp/sess_[PHPSESSID]`
-- Secure = Data never sent to browser
-
-#### Cookies
-
-**Definition**: Small text files stored on client browser that are sent with every HTTP request.
-
-```
-Cookie = Browser's memory of server preferences
-
-Structure:
-┌──────────────────────────────────┐
-│ Name: PHPSESSID                  │
-│ Value: abc123def456ghi789...     │
-│ Expires: (end of session)        │
-│ HttpOnly: ✓ (JS cannot access)   │
-│ Secure: ✓ (HTTPS only)           │
-│ SameSite: Strict (no CSRF)       │
-└──────────────────────────────────┘
-```
-
-**Key Points:**
-- Stored in browser memory
-- Sent automatically with each request
-- HttpOnly = JavaScript cannot steal it
-- Max size = 4KB
-- Domain-specific (cannot be read by other sites)
-
-### Key Differences
-
-| Aspect | Sessions | Cookies |
-|--------|----------|---------|
-| **Location** | Server memory | Browser storage |
-| **Size** | Unlimited | 4KB max |
-| **Security** | High (server-side) | Medium (client-side) |
-| **Expiry** | Browser close | Configurable |
-| **User Access** | Server-side only | User can see/modify |
-| **Use Case** | Authentication | Preferences, tracking |
-
----
-
-### 🔐 Session Management
-
-**How Authentication Works:**
-
-```
-Login Page
-    ↓
-Credentials Validation (auth.php)
-    ↓
-Password Hash Comparison (password_verify)
-    ↓
-Session Created ($_SESSION['user_id'])
-    ↓
-Redirect to Dashboard
-```
-
-### Session Storage
-
-- **Type**: Server-side PHP Sessions
-- **Storage**: `/tmp` (Linux/Mac) or `%TEMP%` (Windows)
-- **Identifier**: `PHPSESSID` cookie
-- **Timeout**: 3600 seconds (configurable)
-- **Scope**: Per user per browser
-
-### Cookie Configuration
-
-```php
-// Session cookies - HTTP Only (secure)
-session_set_cookie_params([
-    'httponly' => true,     // JavaScript cannot access
-    'secure' => false,      // true in production (HTTPS only)
-    'samesite' => 'Strict'  // CSRF protection
-]);
-```
-
-**Cookie Details:**
-- Name: `PHPSESSID`
-- Value: Random 26-character string
-- Expires: At end of session
-- HttpOnly: ✓ (prevents XSS theft)
-- Secure: ✗ (set to true in production)
-- SameSite: Strict (prevents CSRF)
-
-### Security Features
-
-1. **Authentication Check**
-   ```php
-   require_once 'auth.php';
-   require_login();
-   // Ensures user is authenticated
-   ```
-
-2. **Session Regeneration**
-   - New session ID on login
-   - Prevents session fixation attacks
-
-3. **Automatic Logout**
-   - 1 hour idle timeout
-   - Force re-login after timeout
-
-4. **CSRF Token Validation**
-   - Generated per form
-   - Validated on submission
-   - Prevents cross-site attacks
-
-### User Session Lifecycle
-
-| Stage | Action | Data |
-|-------|--------|------|
-| **Login** | `$_SESSION['user_id'] = $user_id` | User ID stored |
-| **Active** | Session maintained across requests | User remains logged in |
-| **Idle** | Timeout after 3600 seconds | Automatic logout |
-| **Logout** | `session_destroy()` | Session erased |
-
-### Testing Authentication
-
-```bash
-# Check current session (in PHP):
-var_dump($_SESSION);
-
-# Check session in logs:
-tail -f logs.php
-
-# Verify PHPSESSID cookie:
-# Browser → DevTools → Application → Cookies
-```
-
-
+> ⚠️ **Never commit `.env` to Git.** It is git-ignored by design.
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- PHP 8.2+
-- Node.js 16+ LTS  
-- MySQL 8.0
-- Git
 
-### Installation (5 Steps)
+| Tool | Version | Purpose |
+|------|---------|---------|
+| PHP | 8.2+ | Server-side rendering |
+| Node.js | 16+ LTS | Gemini API gateway |
+| MySQL | 8.0 | Database |
+| XAMPP / Apache | Any | Local web server |
+
+### Installation (Local — XAMPP)
 
 ```bash
-# 1. Navigate to project
-cd c:\xampp\htdocs\Edu-Planning
+# 1. Clone the repository
+git clone https://github.com/Mohammed-ES/Edu-Planning.git
+cd Edu-Planning
 
-# 2. Install PHP dependencies
-composer install
-
-# 3. Install Node dependencies
+# 2. Install Node.js dependencies
 npm install
 
-# 4. Setup database
+# 3. Setup environment
+cp .env.example .env
+# Edit .env with your DB credentials and Gemini API key
+
+# 4. Create database & run schema
 mysql -u root -p < schema.sql
 
-# 5. Start services
-# Terminal 1:
+# 5. Start Node.js API server
 npm start
+# → http://localhost:3001
 
-# Terminal 2:
-# Open browser: http://localhost/Edu-Planning/dashboard.php
+# 6. Start XAMPP (Apache + MySQL), then open:
+# → http://localhost/Edu-Planning/
 ```
 
-### Environment Setup
+### Installation (Docker)
 
 ```bash
-# Copy environment template
-cp .env.example .env
+# Clone & configure
+git clone https://github.com/Mohammed-ES/Edu-Planning.git
+cd Edu-Planning
+cp .env.example .env  # edit with your values
 
-# Edit .env with your values
-# - Add Gemini API Key
-# - Configure database credentials
+# Launch all services
+docker-compose up -d
+
+# Access
+# Frontend: http://localhost:8080
+# API:      http://localhost:3001
+# DB:       localhost:3307
 ```
 
 ---
 
-## 📖 How It Works
+## 🔄 How It Works
 
-### User Workflow
+### AI Planning Data Flow
 
 ```
-🎯 STUDENT JOURNEY
-
-Step 1: Login/Register
-       └─→ Session created, dashboard displayed
-
-Step 2: Create Modules
-       └─→ Add subjects (Math, Physics, etc.)
-
-Step 3: Add Study Notes
-       └─→ Record difficulties & observations
-       └─→ Notes stored in database
-
-Step 4: Generate Plan (via Recommendations)
-       └─→ Select modules
-       └─→ Choose notes to analyze
-       └─→ Submit to Gemini AI
-
-Step 5: AI Analysis (Backend)
-       └─→ Gemini analyzes patterns
-       └─→ Creates 7-day schedule
-       └─→ Saved in revision_plans table
-
-Step 6: Review & Study
-       └─→ View calendar
-       └─→ Follow daily sessions
-       └─→ Track progress
+  Browser (recommendations.php)
+       │
+       │  AJAX POST /api/generate-plan
+       │  { modules: [{name, notes}], days: 7 }
+       ↓
+  Node.js Express (server.js :3001)
+       │
+       │  Builds structured prompt
+       │  Sends to Gemini 2.5 Flash
+       ↓
+  Google Gemini API
+       │
+       │  Analyzes notes for difficulty
+       │  Returns 7-day JSON schedule
+       ↓
+  Node.js — parses & validates JSON
+       │
+       │  Returns { success: true, data: {...} }
+       ↓
+  PHP (recommendations.php)
+       │
+       │  Saves to revision_plans (MySQL)
+       │  Displays calendar view
+       ↓
+  Student reviews plan & studies 🎓
 ```
+
+### Priority Mapping (AI)
+
+| Note Content | Priority | Daily Duration |
+|---|---|---|
+| "difficult / struggle / weak" | 🔴 Haute | 150–180 min |
+| "good / solid" | 🟡 Moyenne | 100–130 min |
+| "excellent / strong" | 🟢 Basse | 60–90 min |
 
 ---
 
-## 🔄 Data Flow
+## 📊 Database Schema
 
 ```
-FRONTEND          API              AI SERVICE      DATABASE
-═════════         ═══              =══════════     ════════
-
-User Input ─────→ POST /generate ─→ Gemini API ──→ revision_plans
-  modules          /plan            Analyzes        (stores plan)
-  notes                             patterns        ai_recommendations
-                                                    (stores response)
-                 ← JSON Response ←─────── ────────
-                                                    
-Display Plan ←─ JSON Data ←──────────────────────  
-Calendar
-Sessions
+users(id, username, email, password_hash, role, created_at, updated_at)
+  │
+  ├── modules(id, user_id, module_name, created_at, updated_at)
+  │       │
+  │       └── notes(id, module_id, note_value, description, created_at)
+  │
+  ├── revision_plans(id, user_id, plan_data[JSON], start_date, end_date,
+  │                  used_note_ids[JSON], selected_modules[JSON], created_at)
+  │
+  ├── ai_recommendations(id, user_id, recommendation[JSON], created_at)
+  │
+  └── logs(id, user_id, action, created_at)
 ```
+
+> Full SQL schema in [`schema.sql`](schema.sql)
 
 ---
 
-## 📊 Database Overview
+## 🌐 API Endpoints (Node.js — Port 3001)
 
-**Core Tables:**
-- `users` — Student accounts
-- `modules` — Subject/course data  
-- `notes` — Student observations
-- `revision_plans` — Generated schedules
-- `ai_recommendations` — AI analysis logs
-- `logs` — Activity audit trail
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | API status & version |
+| `POST` | `/api/generate-plan` | Generate 7-day AI schedule |
+| `GET` | `/api/revision-plan/:module` | Schedule for a specific module |
+| `GET` | `/health` | Health check (JSON) |
 
-**For full schema details**, see `schema.sql` or [ARCHITECTURE.md](ARCHITECTURE.md)
+**Example request:**
+```json
+POST http://localhost:3001/api/generate-plan
+{
+  "modules": [
+    { "name": "Mathematics", "notes": "Struggling with integration" },
+    { "name": "Physics", "notes": "Good understanding of mechanics" }
+  ]
+}
+```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### API Connection Issues
-```
-❌ "Cannot connect to API server"
-→ Check: npm start running on Port 3001
-→ Check: Firewall not blocking Port 3001
-→ Check: http://localhost:3001/health returns OK
-```
+| Error | Fix |
+|-------|-----|
+| `Cannot connect to API server` | Run `npm start`, check port 3001 is free |
+| `Database connection failed` | Verify DB credentials in `.env`, MySQL running |
+| `Invalid Gemini API key` | Check `GEMINI_API_KEY` in `.env`, validate in AI Studio |
+| `Slow AI generation (>30s)` | Reduce notes/modules, check internet connection |
+| `Session expired` | Re-login, timeout is 1hr by default |
 
-### Database Issues
+Run **`health_check.php`** to automatically diagnose all components:
 ```
-❌ "Database connection failed"
-→ Check: MySQL running
-→ Check: Credentials in .env are correct
-→ Run: mysql -u root -p
-→ Verify: Database edu_planning exists
-```
-
-### Gemini API Issues
-```
-❌ "Invalid Gemini API key"
-→ Check: .env has GEMINI_API_KEY set
-→ Check: Key is active in Google AI Studio
-→ Try: Regenerate a new key
-→ Check: Network connection working
-```
-
-### Slow Performance
-```
-❌ "Gemini analysis takes >30 seconds"
-→ Reduce: Number of notes being analyzed
-→ Reduce: Number of modules selected
-→ Check: Internet connection stability
+http://localhost/Edu-Planning/health_check.php
 ```
 
 ---
 
 ## 📚 Documentation
 
-| Document | Content |
-|----------|---------|
-| **README.md** | This file - Overview & quick start |
-| **ARCHITECTURE.md** | Complete system architecture & file locations |
-| **schema.sql** | Database structure & relationships |
-| **.gitignore** | Files to exclude from Git |
-
----
-
-## ⚡ Performance Tips
-
-1. **Limit Analysis Scope**
-   - Select 2-3 modules per plan generation
-   - Include only recent, relevant notes
-
-2. **Database Optimization**
-   - Indexes on `user_id` and date fields
-   - Archive old plans periodically
-
-3. **Frontend Performance**
-   - Lazy-load calendar months
-   - Cache generated plans locally
-   - Compress images and assets
+| File | Content |
+|------|---------|
+| `README.md` | Overview, quick start, API reference |
+| `ARCHITECTURE.md` | Full system architecture, data flows, file locations |
+| `schema.sql` | Database structure & relationships |
+| `.env.example` | Environment variable template |
+| `.gitignore` | Git exclusions (`.env`, `node_modules`, etc.) |
 
 ---
 
 ## 🤝 Contributing
 
-This is an academic project. For improvements:
-1. Create a feature branch
-2. Test thoroughly
-3. Document changes
-4. Submit for review
+This is an academic project. To contribute:
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Test your changes thoroughly
+4. Submit a pull request with documentation
 
 ---
 
-## 📝 Notes
+## 📝 Project Info
 
-- Built for **academic use** at Université Cadi Ayyad
-- Uses **open-source technologies**
-- Follows **security best practices**
-- Maintains **clean code standards**
+- **Institution**: Université Cadi Ayyad — Marrakech, Morocco
+- **Stack**: PHP + Node.js + MySQL + Google Gemini AI
+- **License**: ISC
+- **Security**: Follows OWASP best practices
 
 ---
 
-**Last Updated**: March 29, 2026  
-**Version**: 2.1  
-**Status**: Production Ready ✓
+**Last Updated**: April 2, 2026  
+**Version**: 2.2  
+**Status**: ✅ Production Ready
 
-Built with ❤️ for smarter studying
+Built with ❤️ for smarter studying at UCA
