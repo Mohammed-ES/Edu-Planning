@@ -1,0 +1,16 @@
+{
+  "name": "edu-planning",
+  "version": "1.0.0",
+  "description": "Université Cadi Ayyad — Marrakech",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "express": "^5.2.1"
+  }
+}
