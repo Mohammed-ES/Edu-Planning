@@ -4,6 +4,8 @@
 >
 > *Université Cadi Ayyad (UCA) — Academic Project*
 
+> **⚠️ Note :** Google Calendar **n'est pas intégré** dans cette application. La page `planning.php` est un calendrier visuel simple côté client (JavaScript), sans ajout ni suppression de sessions.
+
 ---
 
 ## 📊 Vue d'ensemble (Architecture 3 couches)
@@ -40,9 +42,10 @@
 │  users               6 tables  │     │       Modèle: gemini-2.5-flash  │
 │  modules                       │     │       Prompt → JSON planning    │
 │  notes                         │     │                                 │
-│  revision_plans (JSON)         │     │  📅 Google Calendar (Futur)     │
-│  ai_recommendations            │     │       Non implémenté            │
-│  logs                          │     │                                 │
+│  revision_plans (JSON)         │     │  📅 Google Calendar             │
+│  ai_recommendations            │     │       ❌ Non intégré / non       │
+│  logs                          │     │       utilisé dans cette app     │
+│                                │     │                                 │
 └────────────────────────────────┘     └─────────────────────────────────┘
 ```
 
@@ -86,11 +89,14 @@ C:\xampp\htdocs\Edu-Planning\
 │   ├─ Ajouter / Éditer / Supprimer note
 │   └─ Tables: modules + notes
 │
-├── planning.php        → Calendrier visuel
-│   ├─ Récupère la dernière revision_plan depuis BD
-│   ├─ Navigation mois précédent / suivant
-│   ├─ Parsing plan_data (JSON) → affichage sessions
-│   └─ Couleurs selon priorité (haute/moyenne/basse)
+├── planning.php        → 📅 Calendrier visuel (lecture seule)
+│   ├─ Affiche un calendrier mensuel en JavaScript pur
+│   ├─ Navigation: mois précédent / mois suivant
+│   ├─ Met en évidence le jour actuel (today)
+│   ├─ ⚠️ PAS de lecture depuis la base de données
+│   ├─ ⚠️ PAS d'ajout, modification ou suppression
+│   ├─ ⚠️ PAS d'intégration Google Calendar
+│   └─ Les sessions AI sont consultées dans recommendations.php
 │
 ├── recommendations.php → 🤖 Générateur de planning IA
 │   ├─ Historique tous les plannings de l'utilisateur
@@ -270,13 +276,13 @@ C:\xampp\htdocs\Edu-Planning\
            │ INSERT INTO revision_plans (plan_data JSON)
            │ INSERT INTO ai_recommendations
            │ logAction($user_id, 'plan_generated')
-           ↓
-
-  Étape 7 │ planning.php — Affichage
-           │ SELECT plan_data FROM revision_plans (dernière)
-           │ Parse JSON → affiche calendrier 7 jours
-           │ Sessions colorées par priorité
+           │ Affichage du plan sur la même page
 ```
+
+> ⚠️ **Note — planning.php** : Cette page est un **calendrier mensuel visuel purement JavaScript**.
+> Elle **ne lit pas la BD**, n'affiche **pas les sessions IA**, et n'offre **aucun CRUD**.
+> Elle affiche simplement les jours du mois avec navigation précédent/suivant et surligne la date du jour.
+> Les plans générés par Gemini sont consultables directement dans `recommendations.php`.
 
 ---
 

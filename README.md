@@ -48,8 +48,8 @@
 | 📝 Study Notes | Record difficulties & observations per module | ✅ Live |
 | 🤖 Gemini AI Planning | Generate personalized 7-day revision plans | ✅ Live |
 | 📊 Dashboard | Statistics: modules, notes, sessions, days left | ✅ Live |
-| 📆 Calendar View | Visualize sessions by day with colors & priorities | ✅ Live |
-| 📋 Recommendation History | Browse and delete past AI-generated plans | ✅ Live |
+| 📆 Calendar View (`planning.php`) | Visual monthly calendar — navigate months, highlights today | ✅ Live |
+| 📋 Recommendations & Plan View | Browse, generate and read AI plans with full 7-day sessions | ✅ Live |
 | 👤 User Profile | Edit profile & change password | ✅ Live |
 | 🔍 Activity Logs | Full audit trail of user actions | ✅ Live |
 | 🏥 Health Check | System diagnostics for all components | ✅ Live |
@@ -98,8 +98,8 @@ Edu-Planning/
 ├── 📄 logout.php             # Session destroy + redirect
 ├── 📄 dashboard.php          # Main dashboard (stats + quick links)
 ├── 📄 modules.php            # Module & notes management (CRUD)
-├── 📄 planning.php           # Calendar view of generated plans
-├── 📄 recommendations.php    # AI planning generator + history
+├── 📄 planning.php           # Monthly calendar widget (JS only — navigation + today highlight)
+├── 📄 recommendations.php    # AI planning generator + full plan display + history
 ├── 📄 profile.php            # User profile edit
 ├── 📄 logs.php               # Activity audit trail
 ├── 📄 health_check.php       # System diagnostics
@@ -252,10 +252,15 @@ docker-compose up -d
   PHP (recommendations.php)
        │
        │  Saves to revision_plans (MySQL)
-       │  Displays calendar view
+       │  Displays the full 7-day plan on the same page
        ↓
   Student reviews plan & studies 🎓
 ```
+
+> ⚠️ **planning.php** is a **standalone visual calendar** (pure JavaScript).
+> It shows a monthly grid with prev/next navigation and highlights today.
+> It does **not** read from the database and does **not** display AI sessions.
+> AI-generated plans are displayed directly on `recommendations.php`.
 
 ### Priority Mapping (AI)
 
