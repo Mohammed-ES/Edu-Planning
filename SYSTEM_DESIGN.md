@@ -1,7 +1,6 @@
 # System Design — Edu-Planning
 
 > AI-Powered Academic Planning Platform | Université Cadi Ayyad, Marrakech
-> Version 2.3 | Last updated: 2026-05-10
 
 ---
 
