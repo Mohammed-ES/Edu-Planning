@@ -22,6 +22,12 @@ gemini-test.js
 list-models.js
 
 # ============================================================
+# DEPRECATED / DUPLICATE FILES (replaced by modules-shared.js)
+# ============================================================
+js/modules_edit.js
+js/modules_view.js
+
+# ============================================================
 # INTERNAL CONTEXT & ARCHITECTURE DOCS
 # ============================================================
 context/

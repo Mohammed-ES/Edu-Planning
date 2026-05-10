@@ -1,5 +1,5 @@
 <?php
-require_once 'auth.php';
+require_once __DIR__ . '/include/auth.php';
 
 if (is_logged_in()) {
     logAction($_SESSION['user_id'], 'logout', $pdo);

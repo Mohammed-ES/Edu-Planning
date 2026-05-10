@@ -1,5 +1,12 @@
 <?php
-require_once 'auth.php';
+require_once __DIR__ . '/include/auth.php';
+
+// Redirect to Welcome animation unless returning from it
+if (!isset($_GET['welcome'])) {
+    header("Location: Welcome.php");
+    exit;
+}
+
 if (is_logged_in()) {
     header("Location: dashboard.php");
     exit;
@@ -7,742 +14,32 @@ if (is_logged_in()) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edu-Planning — Intelligent Academic Platform UCA</title>
     <link rel="icon" type="image/png" href="assets/images/universite-cadi-ayyad.png">
-    <meta name="description" content="Edu-Planning, the intelligent academic platform of Université Cadi Ayyad. AI-generated personalized revision schedules, module tracking, and grade management.">
+    <meta name="description"
+        content="Edu-Planning, the intelligent academic platform of Université Cadi Ayyad. AI-generated personalized revision schedules, module tracking, and grade management.">
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&family=Roboto:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&family=Roboto:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap"
+        rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Animations CSS -->
-    <link rel="stylesheet" href="assets/animations.css">
+    <!-- Animations CSS removed (file not present) -->
 
-    <style>
-        /* ── Color synchronization with welcome screen ── */
-        :root {
-            /* Browns — identical to welcome screen */
-            --c-dark-bg    : #1C0A02;   /* darkest background */
-            --c-dark-2     : #3D1C08;   /* deep brown */
-            --c-primary    : #6B3410;   /* main medium brown */
-            --c-primary-2  : #8B4513;   /* terracotta brown */
-            --c-primary-3  : #A0651A;   /* light brown */
-            
-            /* Golds — identical to welcome screen */
-            --c-gold       : #C8962E;   /* main gold */
-            --c-gold-light : #D4A843;   /* light gold */
-            
-            /* Neutrals */
-            --c-white      : #FFFFFF;
-            --c-text-light : rgba(255,255,255,0.75);
-            --c-text-muted : rgba(255,255,255,0.45);
-            --c-bg-warm    : #FAF6F0;
-            --c-bg-card    : #FFFFFF;
-            --c-border     : #E0D8CF;
-            
-            /* Aliases for compatibility */
-            --primary-dark:  #5C2E0E;     /* dark primary */
-            --primary:       #8B4513;     /* primary color */
-            --accent:        #C8962E;     /* accent gold */
-            --accent-light:  #D4A843;     /* light accent */
-            --bg-warm:       #FAF6F0;     /* warm background */
-            --text-dark:     #2C1A0E;     /* dark text */
-            --white:         #FFFFFF;     /* white */
-            --deep:          #1C0F07;     /* deep dark */
-            --body-dark:     #3D1C08;     /* body dark background */
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html { scroll-behavior: smooth; }
-
-        body {
-            font-family: 'Roboto', sans-serif;
-            color: var(--text-dark);
-            background: var(--bg-warm);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        /* ════════════════════════════════════════
-        NAVBAR
-           ════════════════════════════════════════ */
-        .navbar-premium {
-            background: transparent;
-            padding: 0;
-            height: 72px;
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 1000;
-            transition: background 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease;
-            border-bottom: 1px solid transparent;
-        }
-
-        .navbar-premium .container {
-            height: 72px;
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-premium.navbar-scrolled {
-            background: rgba(28, 10, 2, 0.97);   /* --c-dark-bg */
-            backdrop-filter: blur(12px);
-            box-shadow: 0 4px 24px rgba(0,0,0,0.25);
-            border-bottom-color: rgba(200,150,46,0.3);
-        }
-
-        .navbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-family: 'Playfair Display', serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--accent-light) !important;
-            text-decoration: none;
-            animation: fadeInLeft 0.6s ease both;
-        }
-
-        .navbar-brand img {
-            width: 44px; height: 44px;
-            object-fit: contain;
-            filter: brightness(0) invert(1);
-            animation: zoomIn 0.6s ease both;
-        }
-
-        .nav-link {
-            color: rgba(255,255,255,0.9) !important;
-            font-weight: 500;
-            font-size: 15px;
-            padding: 8px 14px !important;
-            position: relative;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 4px; left: 14px;
-            width: 0; height: 2px;
-            background: var(--accent);
-            transition: width 0.3s ease;
-        }
-
-        .nav-link:hover::after { width: calc(100% - 28px); }
-        .nav-link:hover { color: var(--accent-light) !important; }
-
-        .btn-nav-outline {
-            color: var(--white);
-            border: 2px solid rgba(255,255,255,0.7);
-            border-radius: 8px;
-            padding: 9px 22px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            letter-spacing: 0.3px;
-        }
-
-        .btn-nav-outline:hover {
-            background: rgba(255,255,255,0.12);
-            border-color: var(--white);
-            color: var(--white);
-        }
-
-        .btn-nav-gold {
-            background: linear-gradient(135deg, var(--accent), var(--accent-light));
-            color: #1C0F07;
-            border: none;
-            border-radius: 8px;
-            padding: 9px 22px;
-            font-size: 14px;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            letter-spacing: 0.3px;
-            box-shadow: 0 4px 14px rgba(200,150,46,0.35);
-        }
-
-        .btn-nav-gold:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(200,150,46,0.5);
-            color: #1C0F07;
-        }
-
-        .navbar-toggler {
-            border-color: rgba(255,255,255,0.5);
-            color: var(--white);
-        }
-
-        .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-        }
-
-        /* ════════════════════════════════════════
-        HERO SECTION
-           ════════════════════════════════════════ */
-        .hero-section {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            padding-top: 72px;
-        }
-
-        .hero-bg {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                135deg,
-                #1C0A02 0%,
-                #3D1C08 25%,
-                #6B3410 50%,
-                #8B4513 70%,
-                #5C2E0E 100%
-            );
-            background-size: 300% 300%;
-            animation: gradientShift 8s ease infinite;
-            z-index: 0;
-        }
-
-        /* UCA Geometric SVG pattern overlay — same as welcome screen */
-        .hero-bg::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C8962E' fill-opacity='0.06'%3E%3Cpath d='M40 0L49 31H80L56 50L65 80L40 62L15 80L24 50L0 31H31Z'/%3E%3C/g%3E%3C/svg%3E");
-            background-repeat: repeat;
-            background-size: 80px 80px;
-            pointer-events: none;
-        }
-
-        /* Floating particles container */
-        .hero-particles {
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 2;
-            max-width: 1000px;
-            width: 100%;
-        }
-
-        .hero-logo-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(200,150,46,0.12);
-            border: 1px solid rgba(200,150,46,0.35);
-            border-radius: 40px;
-            padding: 10px 20px;
-            margin-bottom: 28px;
-            animation: fadeInUp 0.7s ease 0.2s both;
-            backdrop-filter: blur(4px);
-        }
-
-        .hero-logo-badge img {
-            width: 34px; height: 34px;
-            object-fit: contain;
-            filter: brightness(0) invert(1);
-        }
-
-        .hero-logo-badge span {
-            font-family: 'Roboto', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--accent-light);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .hero-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 52px;
-            font-weight: 900;
-            color: var(--white);
-            line-height: 1.15;
-            margin-bottom: 24px;
-            width: 100%;
-        }
-
-        /* Typewriter — handled purely by CSS, JS does NOT override */
-        .typewriter-text {
-            display: inline-block;
-            overflow: hidden;
-            white-space: nowrap;
-            width: 0;
-            max-width: 100%;
-            border-right: 3px solid var(--accent);
-            vertical-align: bottom;
-            animation:
-                typewriter 1.8s ease-out 0.4s forwards,
-                blinkCursor 0.75s step-end infinite 2.2s;
-        }
-
-        @keyframes typewriter {
-            from { 
-                width: 0;
-            }
-            to { 
-                width: 100%;
-            }
-        }
-        
-        @keyframes blinkCursor {
-            0%,100% { border-right-color: #C8962E; }
-            50%      { border-right-color: transparent; }
-        }
-
-        .hero-subtitle-text {
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
-            font-size: 22px;
-            color: rgba(255,255,255,0.85);
-            margin-bottom: 42px;
-            line-height: 1.7;
-            max-width: 640px;
-            animation: fadeInUp 0.8s ease 1.8s both;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 18px;
-            flex-wrap: wrap;
-            animation: fadeInUp 0.8s ease 2.2s both;
-        }
-
-        .btn-hero-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 50%, var(--accent) 100%);
-            background-size: 200% auto;
-            color: #1C0F07;
-            border: none;
-            border-radius: 40px;
-            padding: 16px 40px;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 700;
-            font-size: 16px;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            animation: shimmerGold 2.5s linear 2.2s infinite, pulseCTA 2s ease-in-out 2.2s infinite;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            box-shadow: 0 8px 28px rgba(200,150,46,0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-hero-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 16px 40px rgba(200,150,46,0.55);
-            color: #1C0F07;
-        }
-
-        .btn-hero-secondary {
-            background: transparent;
-            color: var(--white);
-            border: 2px solid rgba(255,255,255,0.7);
-            border-radius: 40px;
-            padding: 16px 40px;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-            animation: fadeInUp 0.8s ease 2.5s both;
-        }
-
-        .btn-hero-secondary:hover {
-            background: rgba(255,255,255,0.12);
-            border-color: var(--white);
-            color: var(--white);
-            transform: translateY(-3px);
-        }
-
-        /* Scroll indicator */
-        .hero-scroll-hint {
-            position: absolute;
-            bottom: 32px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2;
-            animation: float 2s ease-in-out infinite, fadeIn 0.8s ease 3s both;
-            color: rgba(255,255,255,0.5);
-            font-size: 12px;
-            text-align: center;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .hero-scroll-hint i { font-size: 18px; }
-
-        /* ════════════════════════════════════════
-        FEATURES SECTION
-           ════════════════════════════════════════ */
-        .section-spacing { padding: 100px 0; }
-
-        .section-eyebrow {
-            font-family: 'Roboto', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: var(--accent);
-            margin-bottom: 14px;
-            display: block;
-        }
-
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 44px;
-            font-weight: 800;
-            color: var(--primary-dark);
-            margin-bottom: 18px;
-            line-height: 1.2;
-        }
-
-        .section-subtitle {
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
-            font-size: 19px;
-            color: #7A7A7A;
-            margin-bottom: 60px;
-        }
-
-        /* Feature cards */
-        .feature-card {
-            background: var(--white);
-            border-radius: 16px;
-            padding: 38px 28px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(139,69,19,0.07);
-            border: 1px solid #E0D8CF;
-            border-top: 3px solid var(--c-gold);
-            transition: all 0.35s cubic-bezier(0.22,1,0.36,1);
-            will-change: transform;
-            height: 100%;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 18px 48px rgba(139,69,19,0.18);
-            border-top-color: var(--c-gold-light);
-        }
-
-        .feature-icon {
-            width: 70px; height: 70px;
-            background: linear-gradient(135deg, var(--c-gold), var(--c-gold-light));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 26px;
-            font-size: 28px;
-            color: var(--white);
-            box-shadow: 0 8px 24px rgba(200,150,46,0.28);
-            transition: all 0.35s ease;
-        }
-
-        .feature-card:hover .feature-icon {
-            transform: scale(1.15) rotate(5deg);
-            box-shadow: 0 14px 36px rgba(200,150,46,0.45);
-        }
-
-        .feature-card h4 {
-            font-family: 'Playfair Display', serif;
-            font-size: 21px;
-            color: var(--primary-dark);
-            margin-bottom: 14px;
-            font-weight: 700;
-        }
-
-        .feature-card p {
-            color: #7A7A7A;
-            line-height: 1.8;
-            font-size: 15px;
-        }
-
-        /* ════════════════════════════════════════
-        STATS SECTION \u2014 Same dark gradient as welcome/hero
-           ════════════════════════════════════════ */
-        .stats-section {
-            background: linear-gradient(
-                135deg,
-                #1C0A02 0%,
-                #3D1C08 25%,
-                #6B3410 50%,
-                #8B4513 70%,
-                #5C2E0E 100%
-            );
-            background-size: 300% 300%;
-            animation: gradientShift 8s ease infinite;
-            color: var(--white);
-            border-top: 4px solid var(--c-gold);
-            border-bottom: 4px solid var(--c-gold);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Geometric pattern overlay \u2014 same as welcome/hero */
-        .stats-section::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C8962E' fill-opacity='0.06'%3E%3Cpath d='M40 0L49 31H80L56 50L65 80L40 62L15 80L24 50L0 31H31Z'/%3E%3C/g%3E%3C/svg%3E");
-            background-repeat: repeat;
-            background-size: 80px 80px;
-            pointer-events: none;
-        }
-
-        .stat-item { text-align: center; padding: 36px 20px; position: relative; z-index: 1; }
-
-        .stat-number {
-            font-family: 'Playfair Display', serif;
-            font-size: 58px;
-            font-weight: 700;
-            color: var(--c-gold);
-            margin-bottom: 12px;
-            display: block;
-            line-height: 1;
-        }
-
-        .stat-label {
-            font-size: 15px;
-            font-weight: 500;
-            color: rgba(255,255,255,0.7);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* ════════════════════════════════════════
-        CTA SECTION
-           ════════════════════════════════════════ */
-        .cta-section-wrap {
-            background: var(--bg-warm);
-            padding: 100px 0;
-        }
-
-        .cta-card {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: var(--white);
-            border-radius: 24px;
-            padding: 80px 60px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-card::before {
-            content: '';
-            position: absolute;
-            top: -40%;
-            right: -20%;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(200,150,46,0.14) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-
-        .cta-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C8962E' fill-opacity='0.05'%3E%3Cpath d='M40 0L49 31H80L56 50L65 80L40 62L15 80L24 50L0 31H31Z'/%3E%3C/g%3E%3C/svg%3E");
-            background-repeat: repeat;
-            background-size: 80px 80px;
-            pointer-events: none;
-        }
-
-        .cta-card h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 42px;
-            font-weight: 900;
-            color: var(--white);
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .cta-card p {
-            font-size: 18px;
-            opacity: 0.9;
-            margin-bottom: 40px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .cta-card .btn-cta-group {
-            display: flex;
-            gap: 18px;
-            justify-content: center;
-            flex-wrap: wrap;
-            position: relative;
-            z-index: 1;
-        }
-
-        .btn-cta-primary {
-            background: linear-gradient(135deg, var(--c-gold), var(--c-gold-light));
-            color: #1C0F07;
-            border: none;
-            border-radius: 40px;
-            padding: 16px 38px;
-            font-weight: 700;
-            font-size: 16px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 8px 26px rgba(200,150,46,0.4);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-cta-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 14px 38px rgba(200,150,46,0.55);
-            color: #1C0F07;
-        }
-
-        .btn-cta-secondary {
-            background: transparent;
-            color: var(--white);
-            border: 2px solid rgba(255,255,255,0.6);
-            border-radius: 40px;
-            padding: 16px 38px;
-            font-weight: 600;
-            font-size: 16px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-cta-secondary:hover {
-            background: rgba(255,255,255,0.12);
-            border-color: rgba(255,255,255,0.9);
-            color: var(--white);
-            transform: translateY(-3px);
-        }
-
-        /* ════════════════════════════════════════
-        FOOTER \u2014 Same dark background as welcome
-           ════════════════════════════════════════ */
-        .footer-premium {
-            background: linear-gradient(135deg, #1C0A02 0%, #2C1A0E 100%);
-            color: var(--white);
-            padding: 60px 0 32px;
-            border-top: 4px solid var(--c-gold);
-        }
-
-        .footer-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .footer-brand img {
-            width: 38px; height: 38px;
-            object-fit: contain;
-            filter: brightness(0) invert(1);
-        }
-
-        .footer-brand span {
-            font-family: 'Playfair Display', serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--c-gold-light);
-        }
-
-        .footer-col-title {
-            color: var(--c-gold-light);
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 18px;
-        }
-
-        .footer-link {
-            color: rgba(255,255,255,0.6);
-            font-size: 14px;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 10px;
-            transition: color 0.3s ease;
-            position: relative;
-        }
-
-        .footer-link:hover { color: var(--c-gold); }
-
-        .footer-bottom {
-            text-align: center;
-            padding-top: 28px;
-            margin-top: 28px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.38);
-            font-size: 13px;
-        }
-
-        /* ════════════════════════════════════════
-        RESPONSIVE
-           ════════════════════════════════════════ */
-        @media (max-width: 1024px) {
-            .hero-title { font-size: 45px; }
-            .typewriter-text { font-size: 45px; }
-        }
-
-        @media (max-width: 992px) {
-            .hero-title { font-size: 40px; }
-            .typewriter-text { font-size: 40px; }
-        }
-
-        @media (max-width: 768px) {
-            .hero-title { font-size: 32px; }
-            .typewriter-text { font-size: 32px !important; }
-            .hero-subtitle-text { font-size: 17px; }
-            .section-title { font-size: 30px; }
-            .stat-number { font-size: 42px; }
-            .cta-card { padding: 50px 28px; }
-            .cta-card h2 { font-size: 28px; }
-            .section-spacing { padding: 72px 0; }
-            .hero-cta, .cta-card .btn-cta-group { flex-direction: column; align-items: center; }
-            .btn-hero-primary, .btn-hero-secondary,
-            .btn-cta-primary, .btn-cta-secondary { width: 100%; justify-content: center; }
-        }
-
-        @media (max-width: 480px) {
-            .hero-title { font-size: 26px; }
-            .typewriter-text { font-size: 26px !important; }
-            .hero-subtitle-text { font-size: 16px; }
-            .hero-content { max-width: 100%; padding: 0 16px; }
-        }
-    </style>
+    <link rel="stylesheet" href="css/index.css">
 </head>
+
 <body>
+    <!-- Advanced Mouse Follower -->
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
 
     <!-- ════════════════════════════════════════
         NAVBAR
@@ -753,16 +50,20 @@ if (is_logged_in()) {
                 <img src="assets/images/universite-cadi-ayyad.png" alt="UCA">
                 Edu-Planning
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Menu">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-label="Menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center gap-1">
                     <li class="nav-item anim-fade-down delay-200">
-                        <a class="nav-link" href="#features">Features</a>
+                        <a class="nav-link" href="#about">About</a>
                     </li>
                     <li class="nav-item anim-fade-down delay-300">
-                        <a class="nav-link" href="#stats">About</a>
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item anim-fade-down delay-400">
+                        <a class="nav-link" href="#how-it-works">How It Works</a>
                     </li>
                 </ul>
                 <div class="d-flex gap-2 ms-lg-4 anim-fade delay-500">
@@ -796,7 +97,8 @@ if (is_logged_in()) {
 
                 <!-- Subtitle -->
                 <p class="hero-subtitle-text">
-                    Generate a <em>personalized</em> revision schedule based on your academic performance and optimize your success at UCA.
+                    Generate a <em>personalized</em> revision schedule based on your academic performance and optimize
+                    your success at UCA.
                 </p>
 
                 <!-- CTA buttons -->
@@ -819,6 +121,42 @@ if (is_logged_in()) {
     </section>
 
     <!-- ════════════════════════════════════════
+    ABOUT SECTION
+    ════════════════════════════════════════ -->
+    <section class="section-spacing" id="about"
+        style="background: rgba(184, 134, 11, 0.03); border-top: 1px solid rgba(255, 255, 255, 0.05); border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6 scroll-reveal delay-100">
+                    <div style="position: relative; width: 280px; height: 280px; margin: 0 auto;">
+                        <div id="stl-viewer"
+                            style="width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 20px rgba(184, 134, 11, 0.3)); cursor: grab;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 scroll-reveal delay-200">
+                    <span class="section-eyebrow" style="text-align: left; display: block;">About The Platform</span>
+                    <h2 class="section-title" style="text-align: left; font-size: 36px; margin-bottom: 24px;">
+                        Transforming Academic Management at UCA</h2>
+                    <p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px; color: #7A7A7A;">
+                        Edu-Planning is a modern, AI-powered academic workspace engineered specifically for Université
+                        Cadi Ayyad students. We replace fragmented notes and scattered deadlines with a unified,
+                        intelligent dashboard that keeps you in complete control of your educational journey.
+                    </p>
+                    <p style="font-size: 16px; line-height: 1.8; margin-bottom: 30px; color: #7A7A7A;">
+                        From comprehensive module tracking and dynamic progress analytics to personalized, AI-generated
+                        study schedules, Edu-Planning provides the cutting-edge tools you need to optimize your
+                        revisions, conquer your exams, and achieve sustained academic excellence.
+                    </p>
+                    <a href="register.php" class="btn-hero-primary" style="padding: 12px 24px; font-size: 14px;">
+                        Join The Community <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════
     FEATURES SECTION
     ════════════════════════════════════════ -->
     <section class="section-spacing" id="features">
@@ -832,49 +170,115 @@ if (is_logged_in()) {
             <div class="row g-4 mt-2">
                 <div class="col-md-4">
                     <div class="feature-card scroll-reveal delay-100">
-                        <div class="feature-icon"><i class="fas fa-book-open"></i></div>
-                        <h4>Complete Management</h4>
-                        <p>Add your modules, enter detailed notes and remarks, and analyze your academic progress in real-time.</p>
+                        <div class="feature-icon"><i class="fas fa-layer-group"></i></div>
+                        <h4>Smart Module Tracking</h4>
+                        <p>Centralize all your coursework. Monitor difficulty levels, track comprehension, and manage
+                            your academic pipeline in one intuitive dashboard.</p>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="feature-card scroll-reveal delay-200">
                         <div class="feature-icon"><i class="fas fa-brain"></i></div>
-                        <h4>Generative AI</h4>
-                        <p>Advanced AI analyzes your performance and generates a personalized 7-day revision schedule tailored to your needs.</p>
+                        <h4>Adaptive AI Planning</h4>
+                        <p>Generate highly personalized revision schedules using advanced algorithms that adapt to your
+                            study pace, ensuring optimal focus for every deadline.</p>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="feature-card scroll-reveal delay-300">
-                        <div class="feature-icon"><i class="fas fa-magnifying-glass"></i></div>
-                        <h4>Detailed Learning Analytics</h4>
-                        <p>Get comprehensive insights into your learning patterns and academic performance.</p>
+                        <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
+                        <h4>Deadline Management</h4>
+                        <p>Never miss a critical date. Our system prioritizes your upcoming exams, ensuring your focus
+                            is always directed where it matters most.</p>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="feature-card scroll-reveal delay-200">
-                        <div class="feature-icon"><i class="fas fa-user-circle"></i></div>
-                        <h4>Comprehensive User Profile</h4>
-                        <p>Manage your account settings, preferences, and keep track of your personal learning objectives.</p>
+                        <div class="feature-icon"><i class="fas fa-user-shield"></i></div>
+                        <h4>Secure Profiles</h4>
+                        <p>Maintain total control over your academic data with robust, encrypted user authentication and
+                            personalized profile management.</p>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="feature-card scroll-reveal delay-300">
-                        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
-                        <h4>Progress Analytics</h4>
-                        <p>Track your improvement with detailed analytics and visualizations of your learning journey.</p>
+                        <div class="feature-icon"><i class="fas fa-chart-pie"></i></div>
+                        <h4>Visual Analytics</h4>
+                        <p>Gain immediate insights into your performance through beautiful, real-time interactive charts
+                            and progress indicators.</p>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="feature-card scroll-reveal delay-400">
-                        <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                        <h4>Guaranteed Security</h4>
-                        <p>Protected data, secure CSRF authentication, and complete respect for your privacy.</p>
+                        <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                        <h4>Actionable Insights</h4>
+                        <p>Turn your academic data into actionable steps. Instantly know which modules require more
+                            attention based on exam proximity and difficulty.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════════
+        HOW IT WORKS SECTION
+        ════════════════════════════════════════ -->
+    <section class="section-spacing" id="how-it-works"
+        style="background: rgba(184, 134, 11, 0.03); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="section-eyebrow">Workflow</span>
+                <h2 class="section-title">How It Works</h2>
+                <p class="section-subtitle">Three simple steps to academic success</p>
+            </div>
+
+            <div class="row g-4 position-relative">
+                <!-- Connecting Line for Desktop -->
+                <div class="d-none d-lg-block"
+                    style="position: absolute; top: 45px; left: 15%; right: 15%; height: 2px; background: linear-gradient(90deg, transparent, var(--gold-primary), transparent); z-index: 1;">
+                </div>
+
+                <div class="col-lg-4 z-2">
+                    <div class="text-center scroll-reveal delay-100"
+                        style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px 20px; height: 100%; position: relative;">
+                        <div
+                            style="width: 60px; height: 60px; background: var(--bg-body); border: 2px solid var(--gold-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--gold-primary); margin: 0 auto 20px; font-weight: 800; font-family: 'Playfair Display', serif;">
+                            1</div>
+                        <h4 style="color: var(--heading-color); font-weight: 700; margin-bottom: 15px;">Add Modules</h4>
+                        <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">Input your subjects,
+                            exam dates, difficulty levels, and current progress into your personalized dashboard.</p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 z-2">
+                    <div class="text-center scroll-reveal delay-200"
+                        style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px 20px; height: 100%; position: relative;">
+                        <div
+                            style="width: 60px; height: 60px; background: var(--bg-body); border: 2px solid var(--gold-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--gold-primary); margin: 0 auto 20px; font-weight: 800; font-family: 'Playfair Display', serif;">
+                            2</div>
+                        <h4 style="color: var(--heading-color); font-weight: 700; margin-bottom: 15px;">Generate Plan
+                        </h4>
+                        <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">Select the modules you
+                            want to focus on and let our AI create an optimized 7-day revision schedule.</p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 z-2">
+                    <div class="text-center scroll-reveal delay-300"
+                        style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px 20px; height: 100%; position: relative;">
+                        <div
+                            style="width: 60px; height: 60px; background: var(--bg-body); border: 2px solid var(--gold-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--gold-primary); margin: 0 auto 20px; font-weight: 800; font-family: 'Playfair Display', serif;">
+                            3</div>
+                        <h4 style="color: var(--heading-color); font-weight: 700; margin-bottom: 15px;">Track Progress
+                        </h4>
+                        <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">Follow your plan, update
+                            your module status, and visualize your growing mastery in real-time analytics.</p>
                     </div>
                 </div>
             </div>
@@ -947,29 +351,34 @@ if (is_logged_in()) {
                         <span>Edu-Planning</span>
                     </div>
                     <p style="color:rgba(255,255,255,0.55); font-size:14px; line-height:1.8;">
-                        Intelligent academic platform developed for Université Cadi Ayyad of Marrakech. Powered by Google Gemini AI.
+                        Intelligent academic platform developed for Université Cadi Ayyad of Marrakech. Powered by an
+                        advanced AI.
                     </p>
                 </div>
                 <div class="col-md-4 offset-md-1">
                     <p class="footer-col-title">Quick Links</p>
-                    <a href="#features" class="footer-link">Features</a>
-                    <a href="#stats" class="footer-link">About</a>
+                    <a href="#about" class="footer-link">About The Platform</a>
+                    <a href="#features" class="footer-link">Key Features</a>
+                    <a href="#how-it-works" class="footer-link">How It Works</a>
                     <a href="login.php" class="footer-link">Login</a>
                     <a href="register.php" class="footer-link">Sign Up</a>
                 </div>
                 <div class="col-md-3">
                     <p class="footer-col-title">Contact &amp; Support</p>
                     <p style="color:rgba(255,255,255,0.55); font-size:14px; margin-bottom:10px;">
-                        <i class="fas fa-envelope" style="color:#C8962E; margin-right:8px;"></i>support@edu-planning.uca.ma
+                        <i class="fas fa-envelope"
+                            style="color:#C8962E; margin-right:8px;"></i>support@edu-planning.uca.ma
                     </p>
                     <p style="color:rgba(255,255,255,0.55); font-size:14px;">
-                        <i class="fas fa-map-marker-alt" style="color:#C8962E; margin-right:8px;"></i>Marrakech, Maroc
+                        <i class="fas fa-map-marker-alt" style="color:#C8962E; margin-right:8px;"></i>
+                        Marrakech, Safi, Maroc
                     </p>
                 </div>
             </div>
 
             <div class="footer-bottom">
-                <p>&copy; 2026 Université Cadi Ayyad — Marrakech. All rights reserved. | <strong style="color:rgba(255,255,255,0.6);">Edu-Planning</strong></p>
+                <p>&copy; 2026 Université Cadi Ayyad — Marrakech. All rights reserved. | <strong
+                        style="color:rgba(255,255,255,0.6);">Edu-Planning</strong></p>
             </div>
         </div>
     </footer>
@@ -978,31 +387,183 @@ if (is_logged_in()) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Smooth scroll for anchor links -->
-    <script>
-        document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
-            anchor.addEventListener('click', function(e) {
-                var href = this.getAttribute('href');
-                if (href !== '#') {
-                    e.preventDefault();
-                    var target = document.querySelector(href);
-                    if (target) {
-                        var offset = 80;
-                        var top = target.getBoundingClientRect().top + window.scrollY - offset;
-                        window.scrollTo({ top: top, behavior: 'smooth' });
-                    }
-                }
-            });
-        });
-
-        // Override stat-number "24/7" — don't animate since it's not a numeric counter
-        var el247 = document.querySelector('[data-target="0"]');
-        if (el247) {
-            el247.textContent = '24/7';
-            el247.removeAttribute('data-target');
-        }
-    </script>
+    <script src="js/index.js"></script>
 
     <!-- App JS (scroll reveal, particles, navbar scroll, cursor, counters) -->
-    <script src="assets/app.js"></script>
+    <script src="js/app.js"></script>
+    <!-- Three.js for STL rendering -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const container = document.getElementById('stl-viewer');
+        if (container) {
+            const scene = new THREE.Scene();
+
+            // Add elegant lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffe699, 1.5);
+            dirLight.position.set(20, 40, 50);
+            scene.add(dirLight);
+
+            const frontLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            frontLight.position.set(0, 0, 50);
+            scene.add(frontLight);
+
+            const backLight = new THREE.DirectionalLight(0xffdf80, 0.8);
+            backLight.position.set(-20, -20, -50);
+            scene.add(backLight);
+
+            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 100);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 2.0;
+            controls.enableZoom = false;
+
+            const loader = new STLLoader();
+            loader.load('assets/images/icons_3d/icons.stl', function (geometry) {
+                // Elegant Gold Material matching app style
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xB8860B, // Dark Goldenrod
+                    metalness: 0.6,
+                    roughness: 0.25
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+
+                geometry.computeBoundingBox();
+                const box = geometry.boundingBox;
+                const center = box.getCenter(new THREE.Vector3());
+                geometry.translate(-center.x, -center.y, -center.z);
+
+                const size = box.getSize(new THREE.Vector3()).length();
+                const scale = 75 / size;
+                mesh.scale.set(scale, scale, scale);
+
+                // Set initial rotation so it faces the camera
+                mesh.rotation.x = 0;
+                mesh.rotation.y = 0;
+
+                scene.add(mesh);
+            }, undefined, function (error) {
+                console.error('Error loading STL:', error);
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                if (!container || !renderer) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+    </script>
+    <script>
+        // --- Advanced Mouse Follower (Animation de souris premium) ---
+        const cursorDot = document.getElementById('cursor-dot');
+        const cursorRing = document.getElementById('cursor-ring');
+
+        if (cursorDot && cursorRing) {
+            // Styling the advanced cursors
+            cursorDot.style.position = 'fixed';
+            cursorDot.style.width = '6px';
+            cursorDot.style.height = '6px';
+            cursorDot.style.backgroundColor = '#D4AF37';
+            cursorDot.style.borderRadius = '50%';
+            cursorDot.style.pointerEvents = 'none';
+            cursorDot.style.transform = 'translate(-50%, -50%)';
+            cursorDot.style.zIndex = '9999';
+            cursorDot.style.transition = 'width 0.2s, height 0.2s';
+
+            cursorRing.style.position = 'fixed';
+            cursorRing.style.width = '36px';
+            cursorRing.style.height = '36px';
+            cursorRing.style.border = '1px solid rgba(212, 175, 55, 0.5)';
+            cursorRing.style.borderRadius = '50%';
+            cursorRing.style.pointerEvents = 'none';
+            cursorRing.style.transform = 'translate(-50%, -50%)';
+            cursorRing.style.zIndex = '9998';
+            cursorRing.style.transition = 'width 0.3s, height 0.3s, border-color 0.3s, background-color 0.3s';
+            cursorRing.style.boxShadow = '0 0 10px rgba(212, 175, 55, 0.2)';
+
+            // Magnetic lag logic
+            let mouseX = window.innerWidth / 2;
+            let mouseY = window.innerHeight / 2;
+            let ringX = mouseX;
+            let ringY = mouseY;
+            let isHovering = false;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                // Dot follows instantly
+                cursorDot.style.left = mouseX + 'px';
+                cursorDot.style.top = mouseY + 'px';
+            });
+
+            const renderCursor = () => {
+                // Ring interpolates to mouse position (smooth delay)
+                ringX += (mouseX - ringX) * 0.15;
+                ringY += (mouseY - ringY) * 0.15;
+                cursorRing.style.left = ringX + 'px';
+                cursorRing.style.top = ringY + 'px';
+                requestAnimationFrame(renderCursor);
+            };
+            requestAnimationFrame(renderCursor);
+
+            // Interactive hover effect
+            const interactables = document.querySelectorAll('a, button, input, .nav-link');
+            interactables.forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    isHovering = true;
+                    cursorDot.style.width = '0px';
+                    cursorDot.style.height = '0px';
+
+                    cursorRing.style.width = '50px';
+                    cursorRing.style.height = '50px';
+                    cursorRing.style.backgroundColor = 'rgba(212, 175, 55, 0.1)';
+                    cursorRing.style.borderColor = '#D4AF37';
+                });
+                el.addEventListener('mouseleave', () => {
+                    isHovering = false;
+                    cursorDot.style.width = '6px';
+                    cursorDot.style.height = '6px';
+
+                    cursorRing.style.width = '36px';
+                    cursorRing.style.height = '36px';
+                    cursorRing.style.backgroundColor = 'transparent';
+                    cursorRing.style.borderColor = 'rgba(212, 175, 55, 0.5)';
+                });
+            });
+
+            // Hide default cursor globally for premium feel
+            document.body.style.cursor = 'none';
+            interactables.forEach(el => { el.style.cursor = 'none'; });
+        }
+    </script>
 </body>
+
 </html>

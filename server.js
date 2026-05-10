@@ -1,40 +1,124 @@
 import express from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
 
-// Express initialization
+// Load environment variables from .env file
+dotenv.config();
+
+// --------------------------------------------------------------------------
+// CONFIGURATION VALIDATION
+// --------------------------------------------------------------------------
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.error("ERROR: GEMINI_API_KEY is not set in .env");
+  process.exit(1);
+}
+
+const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET;
+if (!INTERNAL_API_SECRET) {
+  console.error("ERROR: INTERNAL_API_SECRET is not set in .env");
+  process.exit(1);
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
+
+// --------------------------------------------------------------------------
+// EXPRESS SETUP
+// --------------------------------------------------------------------------
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "100kb" })); // Prevent oversized payloads
 
-// Gemini API key from environment variable
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// --------------------------------------------------------------------------
+// INTERNAL AUTH MIDDLEWARE
+// Protects all /api/* routes from external abuse.
+// PHP backend must send: Authorization: Bearer <INTERNAL_API_SECRET>
+// --------------------------------------------------------------------------
+function requireInternalAuth(req, res, next) {
+  const authHeader = req.headers["authorization"] ?? "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : "";
 
-// Home route
+  if (!token || token !== INTERNAL_API_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
+
+// --------------------------------------------------------------------------
+// RATE LIMITING — Simple in-memory store (use redis in production)
+// Max 10 AI generation requests per IP per 15 minutes
+// --------------------------------------------------------------------------
+const rateLimitStore = new Map();
+const RATE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_MAX = 10;
+
+function rateLimitMiddleware(req, res, next) {
+  const ip = req.ip || req.socket.remoteAddress;
+  const now = Date.now();
+  const record = rateLimitStore.get(ip) ?? { count: 0, start: now };
+
+  if (now - record.start > RATE_WINDOW_MS) {
+    record.count = 0;
+    record.start = now;
+  }
+  record.count++;
+  rateLimitStore.set(ip, record);
+
+  if (record.count > RATE_MAX) {
+    return res.status(429).json({ error: "Too many requests. Try again later." });
+  }
+  next();
+}
+
+// --------------------------------------------------------------------------
+// HOME ROUTE — Status check (public, no auth required)
+// --------------------------------------------------------------------------
 app.get("/", (req, res) => {
   res.json({
     message: "Edu-Planning Gemini API",
     version: "2",
-    status: " Online",
+    status: "Online",
     routes: {
-      "POST /api/generate-plan": "Generate a schedule (7 days)",
-      "GET /api/revision-plan/:module": "Schedule for a specific module",
-      "GET /health": "Check API status"
-    }
+      "POST /api/generate-plan": "Generate a study schedule (7 days)",
+      "GET  /health": "Check API status",
+    },
   });
 });
 
-// Route to generate complete revision schedule (7 days only)
-app.post("/api/generate-plan", async (req, res) => {
-  const { modules } = req.body;
-  // Force 7 days - no other options
-  const days = 7;
+// --------------------------------------------------------------------------
+// HEALTH CHECK (public)
+// --------------------------------------------------------------------------
+app.get("/health", (req, res) => {
+  res.json({ status: "Gemini API OK", timestamp: new Date().toISOString() });
+});
 
-  if (!modules || !Array.isArray(modules)) {
-    return res.status(400).json({ error: "Invalid format: 'modules' array required" });
-  }
+// --------------------------------------------------------------------------
+// GENERATE PLAN (protected)
+// --------------------------------------------------------------------------
+app.post(
+  "/api/generate-plan",
+  requireInternalAuth,
+  rateLimitMiddleware,
+  async (req, res) => {
+    const { modules } = req.body;
+    const days = 7; // Force 7-day plans
 
-  const json_data = JSON.stringify(modules, null, 2);
+    if (!modules || !Array.isArray(modules) || modules.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Invalid format: non-empty 'modules' array required" });
+    }
 
-  const prompt = `You are an expert academic coach. Analyze the student's modules and notes, then generate a VALID JSON response with EXACTLY this structure (7 days only):
+    if (modules.length > 20) {
+      return res
+        .status(400)
+        .json({ error: "Too many modules (max 20)" });
+    }
+
+    const json_data = JSON.stringify(modules, null, 2);
+
+    const prompt = `You are an expert academic coach. Analyze the student's modules and metadata, then generate a VALID JSON response with EXACTLY this structure (7 days only):
 
 MODULES DATA:
 ${json_data}
@@ -44,88 +128,86 @@ Return ONLY valid JSON (no markdown, no explanation). Structure MUST have:
 - Each object: jour, date (YYYY-MM-DD), total_minutes, sessions array
 - Each session: order, module, time_start (HH:MM), duration_minutes, priorite (haute/moyenne/basse), topics (array), description
 
-Based on notes analysis:
-- "difficult/struggle/weak" → haute (150-180 min)
-- "good/solid" → moyenne (100-130 min)  
-- "excellent/strong" → basse (60-90 min)
+Base the priority on the module metadata:
+- difficulty HIGH or low understanding → haute (150-180 min)
+- medium difficulty → moyenne (100-130 min)
+- difficulty EASY or high progress → basse (60-90 min)
 
 Generate 7 days starting from today. Max 300 min/day. Distribute modules evenly.
 
 Return ONLY JSON:
-{"planning": [{"jour": 1, "date": "2026-03-30", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module1", "time_start": "09:00", "duration_minutes": 120, "priorite": "haute", "topics": ["topic1"], "description": "Study based on notes"}]}, {"jour": 2, "date": "2026-03-31", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module2", "time_start": "09:00", "duration_minutes": 120, "priorite": "moyenne", "topics": ["topic2"], "description": "Practice and review"}]}, {"jour": 3, "date": "2026-04-01", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module1", "time_start": "10:00", "duration_minutes": 100, "priorite": "haute", "topics": ["topic3"], "description": "Advanced concepts"}]}, {"jour": 4, "date": "2026-04-02", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module3", "time_start": "09:00", "duration_minutes": 120, "priorite": "basse", "topics": ["topic4"], "description": "Maintenance review"}]}, {"jour": 5, "date": "2026-04-03", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module2", "time_start": "10:00", "duration_minutes": 110, "priorite": "moyenne", "topics": ["topic5"], "description": "Problem solving"}]}, {"jour": 6, "date": "2026-04-04", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module1", "time_start": "09:00", "duration_minutes": 130, "priorite": "haute", "topics": ["topic6"], "description": "Final concepts"}]}, {"jour": 7, "date": "2026-04-05", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module3", "time_start": "14:00", "duration_minutes": 90, "priorite": "basse", "topics": ["summary"], "description": "Comprehensive review"}]}]}`;
-
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
-
-    let rawText = result.response.text();
-
-    // Clean up markdown tags if present
-    rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+{"planning": [{"jour": 1, "date": "YYYY-MM-DD", "total_minutes": 240, "sessions": [{"order": 1, "module": "Module1", "time_start": "09:00", "duration_minutes": 120, "priorite": "haute", "topics": ["topic1"], "description": "Study based on notes"}]}]}`;
 
     try {
-      const plan = JSON.parse(rawText);
-      res.json({ success: true, data: plan });
-    } catch (e) {
-      res.status(500).json({ success: false, error: "Invalid JSON format", raw: rawText });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+      // Set a timeout via AbortController
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      let rawText;
+      try {
+        const result = await model.generateContent(prompt, {
+          signal: controller.signal,
+        });
+        rawText = result.response.text();
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      // Strip any markdown fences the model might wrap JSON in
+      rawText = rawText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```$/g, "")
+        .trim();
+
+      try {
+        const plan = JSON.parse(rawText);
+        res.json({ success: true, data: plan });
+      } catch {
+        res.status(500).json({
+          success: false,
+          error: "AI returned invalid JSON format",
+        });
+      }
+    } catch (error) {
+      if (error.name === "AbortError") {
+        return res
+          .status(504)
+          .json({ success: false, error: "AI request timed out" });
+      }
+      console.error("Gemini API Error:", error.message);
+      res.status(500).json({ success: false, error: "AI service unavailable" });
     }
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
   }
-});
+);
 
-// Route to generate schedule by module (legacy route, kept for compatibility)
-app.get("/api/revision-plan/:module", async (req, res) => {
-  const moduleName = req.params.module;
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-  const result = await model.generateContent(`
-    Create a revision schedule for module ${moduleName}
-    in JSON structured format with {module, chapters, objectives}
-    without explanatory text, only raw JSON
-  `);
-
-  let rawText = result.response.text();
-
-  // Clean up markdown tags if present
-  rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-
-  try {
-    const plan = JSON.parse(rawText);
-    res.json(plan);
-  } catch (e) {
-    res.status(500).json({ error: "Invalid JSON format", raw: rawText });
-  }
-});
-
-// Health check route
-app.get("/health", (req, res) => {
-  res.json({ status: "Gemini API OK", timestamp: new Date().toISOString() });
-});
-
-// Error handling for 404 routes
+// --------------------------------------------------------------------------
+// 404 HANDLER
+// --------------------------------------------------------------------------
 app.use((req, res) => {
   res.status(404).json({
     error: `Route ${req.method} ${req.path} not found`,
-    available_routes: [
-      "POST /api/generate-plan",
-      "GET /api/revision-plan/:module",
-      "GET /health"
-    ]
+    available_routes: ["POST /api/generate-plan", "GET /health"],
   });
 });
 
-// Error handling middleware
+// --------------------------------------------------------------------------
+// GLOBAL ERROR HANDLER
+// --------------------------------------------------------------------------
 app.use((err, req, res, next) => {
-  console.error("Server error:", err);
-  res.status(500).json({ error: err.message });
+  console.error("Unhandled server error:", err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
-// Start server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`🚀 Gemini API started at http://localhost:${PORT}`);
-  console.log(`📅 POST http://localhost:${PORT}/api/generate-plan`);
-  console.log(`💚 Health check: http://localhost:${PORT}/health`);
+// --------------------------------------------------------------------------
+// START SERVER
+// --------------------------------------------------------------------------
+const PORT = parseInt(process.env.PORT ?? "3001", 10);
+app.listen(PORT, "127.0.0.1", () => {
+  // Bind to 127.0.0.1 only — not exposed to network
+  console.log(`Gemini API running at http://127.0.0.1:${PORT}`);
+  console.log(`POST http://127.0.0.1:${PORT}/api/generate-plan`);
+  console.log(`Health: http://127.0.0.1:${PORT}/health`);
 });
-

@@ -1,5 +1,5 @@
 <?php
-require_once 'auth.php';
+require_once __DIR__ . '/include/auth.php';
 
 if (is_logged_in()) {
     header("Location: dashboard.php");
@@ -9,25 +9,38 @@ if (is_logged_in()) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verify_csrf_token($_POST['csrf_token'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $error = "Invalid security token.";
+    } elseif (!check_login_rate_limit()) {
+        $remaining = get_remaining_lockout_seconds();
+        $minutes   = ceil($remaining / 60);
+        $error     = "Too many failed login attempts. Please try again in {$minutes} minute(s).";
     } else {
-        $username = trim($_POST['username']);
-        $password = $_POST['password'];
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
 
         if (empty($username) || empty($password)) {
             $error = "All fields are required.";
         } else {
-            $stmt = $pdo->prepare("SELECT id, password_hash FROM users WHERE username = ? OR email = ?");
+            $stmt = $pdo->prepare("SELECT id, password FROM users WHERE email = ? OR name = ? LIMIT 1");
             $stmt->execute([$username, $username]);
-            $user = $stmt->fetch();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($user && password_verify($password, $user['password_hash'])) {
+            $verified = false;
+            if ($user && !empty($user['password']) && password_verify($password, $user['password'])) {
+                $verified = true;
+            }
+
+            if ($verified) {
+                // Regenerate session ID on login to prevent session fixation
+                session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
+                reset_login_attempts();
                 logAction($user['id'], 'login_success', $pdo);
                 header("Location: dashboard.php");
                 exit;
             } else {
+                increment_login_attempt();
                 if ($user) {
                     logAction($user['id'], 'login_failed', $pdo);
                 } else {
@@ -52,380 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&family=Roboto:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <!-- Animations CSS -->
-    <link rel="stylesheet" href="assets/animations.css">
+    <!-- Animations CSS removed (file not present) -->
 
-    <style>
-        :root {
-            --primary-dark:   #5C2E0E;
-            --primary:        #8B4513;
-            --accent:         #C8962E;
-            --accent-light:   #D4A843;
-            --bg-warm:        #FAF6F0;
-            --text-dark:      #2C1A0E;
-            --white:          #FFFFFF;
-            --border:         #E0D8CF;
-            --muted:          #7A7A7A;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html, body {
-            height: 100%;
-            font-family: 'Roboto', sans-serif;
-            background: var(--bg-warm);
-        }
-
-        body { overflow: hidden; }
-
-        /* ── SPLIT LAYOUT ── */
-        .auth-wrapper {
-            display: flex;
-            height: 100vh;
-        }
-
-        /* LEFT — Image Panel */
-        .auth-image-section {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .auth-image-bg {
-            position: absolute;
-            inset: 0;
-            background-image: url('https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=1200&fit=crop');
-            background-size: cover;
-            background-position: center;
-            animation: kenBurns 20s ease-in-out infinite;
-            will-change: transform;
-        }
-
-        .auth-image-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(92,46,14,0.82) 0%, rgba(139,69,19,0.62) 100%);
-            z-index: 1;
-        }
-
-        .auth-particles {
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .auth-image-content {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-            color: var(--white);
-            padding: 40px;
-            max-width: 420px;
-        }
-
-        .auth-image-logo {
-            width: 72px; height: 72px;
-            background: rgba(200,150,46,0.15);
-            border: 2px solid rgba(200,150,46,0.5);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            backdrop-filter: blur(4px);
-            animation: fadeInUp 0.7s ease 0.2s both;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .auth-image-logo:hover {
-            background: rgba(200,150,46,0.25);
-            border-color: rgba(200,150,46,0.8);
-            transform: scale(1.08) translateY(-3px);
-        }
-
-        .auth-image-logo img {
-            width: 46px; height: 46px;
-            object-fit: contain;
-            filter: brightness(0) invert(1);
-        }
-
-        .auth-image-content h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 44px;
-            font-weight: 900;
-            font-style: italic;
-            line-height: 1.2;
-            margin-bottom: 12px;
-            animation: fadeInLeft 0.8s ease 0.3s both;
-        }
-
-        .auth-image-content h2 a {
-            color: var(--white);
-            text-decoration: none;
-        }
-
-        .auth-image-content .image-subtitle {
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
-            font-size: 19px;
-            color: var(--accent-light);
-            margin-bottom: 20px;
-            animation: fadeIn 0.8s ease 0.7s both;
-        }
-
-        .auth-image-deco-line {
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            margin: 0 auto;
-            animation: lineExpand 0.9s ease 0.9s both;
-            width: 0;
-        }
-
-        /* RIGHT — Form Panel */
-        .auth-form-section {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-warm);
-            padding: 40px 28px;
-            overflow-y: auto;
-        }
-
-        .auth-container {
-            width: 100%;
-            max-width: 400px;
-            animation: fadeInRight 0.8s cubic-bezier(0.22,1,0.36,1) 0.2s both;
-        }
-
-        /* Card with shimmer gold border */
-        .auth-card {
-            background: var(--white);
-            border-radius: 20px;
-            padding: 44px 40px;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(139,69,19,0.15);
-
-            /* Shimmer border technique */
-            border: 2px solid transparent;
-            background-clip: padding-box;
-            background-color: var(--white);
-        }
-
-        .auth-card::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: 22px;
-            background: linear-gradient(90deg, #C8962E 0%, #D4A843 50%, #C8962E 100%);
-            background-size: 200% auto;
-            animation: shimmerGold 3s linear infinite;
-            z-index: -1;
-        }
-
-        /* Corner ornaments */
-        .auth-card .corner-ornament { position: absolute; }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .auth-logo-circle {
-            width: 72px; height: 72px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-light));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            box-shadow: 0 8px 24px rgba(200,150,46,0.3);
-            animation: zoomIn 0.7s ease 0.2s both;
-        }
-
-        .auth-logo-circle img {
-            width: 46px; height: 46px;
-            object-fit: contain;
-        }
-
-        .auth-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 34px;
-            font-weight: 700;
-            color: var(--primary-dark);
-            margin-bottom: 6px;
-            animation: fadeInUp 0.6s ease 0.4s both;
-        }
-
-        .auth-subtitle {
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
-            font-size: 15px;
-            color: var(--muted);
-            animation: fadeIn 0.6s ease 0.5s both;
-        }
-
-        /* Form groups */
-        .form-group {
-            margin-bottom: 22px;
-            position: relative;
-        }
-
-        .form-group:nth-child(1) { animation: fadeInUp 0.6s ease 0.6s both; }
-        .form-group:nth-child(2) { animation: fadeInUp 0.6s ease 0.7s both; }
-        .form-group:nth-child(3) { animation: fadeInUp 0.6s ease 0.8s both; }
-
-        .form-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--primary-dark);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--muted);
-            font-size: 14px;
-            transition: color 0.3s ease;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 44px 14px 42px;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            font-size: 15px;
-            font-family: 'Roboto', sans-serif;
-            background: #FAFAF8;
-            color: var(--text-dark);
-            transition: all 0.3s ease;
-        }
-
-        .form-input::placeholder { color: #B0A090; }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: #FFFDF8;
-            box-shadow: 0 0 0 4px rgba(200,150,46,0.15);
-        }
-
-        .input-wrapper:focus-within .input-icon {
-            color: var(--accent);
-        }
-
-        /* Alert */
-        .alert {
-            padding: 13px 16px;
-            border-radius: 10px;
-            font-size: 14px;
-            margin-bottom: 22px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: fadeInUp 0.4s ease;
-            background: #FDECEA;
-            border-left: 4px solid #C0392B;
-            color: #922B21;
-        }
-
-        /* Login Button */
-        .btn-login {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #C8962E 0%, #D4A843 50%, #C8962E 100%);
-            background-size: 200% auto;
-            color: #1C0F07;
-            border: none;
-            border-radius: 10px;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 700;
-            font-size: 15px;
-            letter-spacing: 0.8px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            animation: fadeInUp 0.6s ease 0.9s both, shimmerGold 2.5s linear 0.9s infinite, pulseCTA 2s ease-in-out 0.9s infinite;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 6px 20px rgba(200,150,46,0.35);
-            margin-top: 6px;
-        }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(200,150,46,0.5);
-            color: #1C0F07;
-        }
-
-        /* Auth footer */
-        .auth-footer {
-            text-align: center;
-            margin-top: 28px;
-            padding-top: 22px;
-            border-top: 1px solid var(--border);
-            font-size: 14px;
-            animation: fadeIn 0.6s ease 1.1s both;
-        }
-
-        .auth-link {
-            color: var(--accent);
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .auth-link:hover {
-            color: var(--primary-dark);
-            text-decoration: underline;
-        }
-
-        /* Validation icons */
-        .field-icon {
-            position: absolute;
-            right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 14px;
-            pointer-events: none;
-        }
-
-        .field-valid .form-input   { border-color: #27AE60; }
-        .field-invalid .form-input { border-color: #C0392B; animation: shake 0.4s ease; }
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 768px) {
-            body { overflow: auto; }
-            .auth-wrapper { flex-direction: column; height: auto; min-height: 100vh; }
-            .auth-image-section { min-height: 38vh; flex: none; }
-            .auth-image-content h2 { font-size: 30px; }
-            .auth-form-section { padding: 30px 20px; flex: none; }
-            .auth-card { padding: 32px 24px; }
-            .auth-title { font-size: 28px; }
-        }
-    </style>
-    <script>
-        // Clear welcome screen session storage when accessing login page
-        // This ensures the welcome screen shows again after re-login
-        sessionStorage.removeItem('uca_welcome_shown');
-    </script>
+    <link rel="stylesheet" href="css/login.css">
+    <script src="js/login.js"></script>
 </head>
 <body>
     <div class="auth-wrapper">
@@ -455,9 +98,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="corner-ornament bottom-right"></div>
 
                     <div class="auth-header">
-                        <div class="auth-logo-circle">
-                            <img src="assets/images/universite-cadi-ayyad.png" alt="UCA">
-                        </div>
                         <h1 class="auth-title">Login</h1>
                         <p class="auth-subtitle">Access your Edu-Planning space</p>
                     </div>
@@ -490,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <div class="form-group">
                             <label for="password" class="form-label">Password</label>
-                            <div class="input-wrapper">
+                            <div class="input-wrapper" style="position: relative;">
                                 <i class="fas fa-lock input-icon"></i>
                                 <input
                                     type="password"
@@ -499,7 +139,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     class="form-input"
                                     placeholder="••••••••"
                                     required
+                                    style="padding-right: 40px;"
                                 >
+                                <button type="button" onclick="togglePassword('password', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #888; cursor: pointer; padding: 0;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
                             </div>
                         </div>
 
@@ -519,6 +163,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- App JS -->
-    <script src="assets/app.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+    </script>
 </body>
 </html>
