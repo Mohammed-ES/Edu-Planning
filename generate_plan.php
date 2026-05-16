@@ -40,8 +40,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $result = generate_and_save_study_plan($pdo, $user_id, $modules_to_plan);
             if ($result['success']) {
+                // Get the last inserted plan ID
+                $plan_id_stmt = $pdo->prepare('SELECT LAST_INSERT_ID() as plan_id');
+                $plan_id_stmt->execute();
+                $plan_id_row = $plan_id_stmt->fetch(PDO::FETCH_ASSOC);
+                $last_plan_id = $plan_id_row['plan_id'] ?? null;
+                
+                // Create tasks from the generated plan
+                if ($last_plan_id) {
+                    $plan_data = is_array($result['plan']) ? $result['plan'] : json_decode($result['plan'], true);
+                    $tasks_result = create_tasks_from_plan($pdo, $last_plan_id, $user_id, $plan_data);
+                    if (!$tasks_result['success']) {
+                        error_log("Failed to create tasks: " . $tasks_result['error']);
+                    }
+                }
+                
                 $generated_plan = is_array($result['plan']) ? json_encode($result['plan'], JSON_PRETTY_PRINT) : $result['plan'];
-                $success_message = 'Study plan generated successfully.';
+                $success_message = 'Study plan generated successfully. <a href="tasks.php?plan=' . $last_plan_id . '" class="alert-link">View Tasks & Progress</a>';
             } else {
                 $error_message = 'Generation failed: ' . $result['error'];
             }
@@ -67,6 +82,11 @@ if (isset($_GET['view_plan'])) {
 }
 
 $previous_plans = get_recent_study_plans($pdo, $user_id);
+
+// Count total plans for accurate plan numbering
+$stmt = $pdo->prepare("SELECT COUNT(*) as total FROM study_plans WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$total_plans_count = (int)($stmt->fetch()['total'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -79,6 +99,8 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/generate_plan.css">
+    <link rel="stylesheet" href="css/generate-plan-inline.css">
+    <link rel="stylesheet" href="css/generate-plan-schedule.css">
 </head>
 <body>
 <div class="wrapper">
@@ -101,23 +123,23 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
         <div class="top-navbar">
             <h2 class="page-title m-0">AI Study Plan</h2>
             <div class="d-flex align-items-center gap-3">
-                <span style="font-weight:500;">Hello, <?= htmlspecialchars($user['name']) ?></span>
-                <div style="width:40px;height:40px;background:linear-gradient(135deg, var(--gold-primary), var(--gold-light));border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--heading-color);font-weight:bold;font-size:16px;">
+                <span class="generate-plan-greeting">Hello, <?= htmlspecialchars($user['name']) ?></span>
+                <div class="generate-plan-avatar">
                     <?= htmlspecialchars(strtoupper(substr($user['name'], 0, 1))) ?>
                 </div>
             </div>
         </div>
         <div class="content-padding">
             <div class="mb-4">
-                <h1 style="font-family:'Playfair Display',serif;font-weight:900;color:var(--heading-color);margin:0;font-size:42px;">Generate Your Plan</h1>
-                <p class="plan-subtitle" style="margin-top:8px;">Use AI to create a personalized study schedule based on your modules.</p>
+                <h1 class="plan-title">Generate Your Plan</h1>
+                <p class="plan-subtitle">Use AI to create a personalized study schedule based on your modules.</p>
             </div>
 
             <?php if ($error_message): ?>
                 <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error_message) ?></div>
             <?php endif; ?>
             <?php if ($success_message): ?>
-                <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($success_message) ?></div>
+                <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><?= $success_message ?></div>
             <?php endif; ?>
             <?php if (!check_gemini_config()): ?>
                 <div class="alert alert-danger"><i class="fas fa-circle-info me-2"></i>Please set <code>GEMINI_API_KEY</code> in <code>config.php</code>.</div>
@@ -128,8 +150,8 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
                 <div class="col-lg-4">
                     <div class="panel-card p-4 h-100 d-flex flex-column">
                         <div class="d-flex align-items-center gap-2 mb-3">
-                            <i class="fas fa-layer-group" style="color:var(--gold-primary);"></i>
-                            <h3 class="m-0" style="font-family:'Playfair Display',serif;font-weight:800;color:var(--heading-color);">Your Modules</h3>
+                            <i class="fas fa-layer-group modules-panel-icon"></i>
+                            <h3 class="m-0 modules-panel-title">Your Modules</h3>
                         </div>
 
                         <?php if (empty($user_modules)): ?>
@@ -140,17 +162,17 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
                                 <a class="btn btn-primary mt-3" href="modules/add.php"><i class="fas fa-plus me-2"></i>Add Module</a>
                             </div>
                         <?php else: ?>
-                            <div class="d-flex flex-column gap-3" style="flex:1; overflow:auto; padding-right:2px;" id="modulesList">
+                            <div class="d-flex flex-column gap-3 modules-list-container" id="modulesList">
                                 <?php foreach ($user_modules as $m): ?>
                                     <?php
                                     $pill = $m['difficulty'] === 'HARD' ? 'pill-hard' : ($m['difficulty'] === 'MEDIUM' ? 'pill-medium' : 'pill-easy');
                                     ?>
-                                    <div class="module-item selectable-module" style="cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, <?= (int)$m['id'] ?>)">
+                                    <div class="module-item selectable-module" onclick="toggleModule(this, <?= (int)$m['id'] ?>)">
                                         <div class="d-flex justify-content-between align-items-start gap-2">
                                             <p class="module-item-title"><?= htmlspecialchars($m['module_name']) ?></p>
                                             <span class="pill <?= $pill ?>"><?= htmlspecialchars($m['difficulty']) ?></span>
                                         </div>
-                                        <div class="d-flex justify-content-between mt-2" style="font-size:12px;color:var(--text-muted);font-weight:700;">
+                                        <div class="d-flex justify-content-between mt-2 module-meta-text">
                                             <span>Exam: <?= htmlspecialchars(date('M d', strtotime($m['exam_date']))) ?></span>
                                             <span>Prog: <?= (int)$m['progress'] ?>%</span>
                                         </div>
@@ -161,7 +183,7 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
                                 <?php endforeach; ?>
                             </div>
 
-                            <div class="mt-3" style="font-size:12px;color:var(--text-muted);font-weight:700;">
+                            <div class="modules-selected-info">
                                 <span id="selectedCount">0</span> module(s) selected (default: all).
                             </div>
 
@@ -180,23 +202,23 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
                 <div class="col-lg-8">
                     <div class="panel-card p-4 h-100">
                         <div class="d-flex align-items-center gap-2 mb-3">
-                            <i class="fas fa-book-open" style="color:var(--gold-primary);"></i>
-                            <h3 class="m-0" style="font-family:'Playfair Display',serif;font-weight:800;color:var(--heading-color);">Your Study Schedule</h3>
+                            <i class="fas fa-book-open schedule-panel-icon"></i>
+                            <h3 class="m-0 schedule-panel-title">Your Study Schedule</h3>
                         </div>
 
                         <?php if ($generated_plan): ?>
                             <?php $plan_data = json_decode($generated_plan, true); ?>
                             <?php if (isset($plan_data['planning'])): ?>
-                                <div class="timeline mt-3" style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
+                                <div class="timeline-container">
                                 <?php foreach ($plan_data['planning'] as $day): ?>
-                                    <div class="card mb-3" style="border: 1px solid var(--border-color); background: rgba(184,134,11,0.03);">
+                                    <div class="card mb-3 timeline-item">
                                         <div class="card-body">
-                                            <h5 style="color: var(--gold-primary); font-family: 'Playfair Display', serif; font-weight: 700;">
-                                                <i class="fas fa-calendar-day me-2"></i><?= htmlspecialchars($day['day']) ?> <small class="text-muted" style="font-size: 14px;">(<?= htmlspecialchars($day['date']) ?>)</small>
+                                            <h5 class="timeline-day-title">
+                                                <i class="fas fa-calendar-day me-2"></i><?= htmlspecialchars($day['day']) ?>
                                             </h5>
-                                            <p class="mb-2"><strong><i class="fas fa-book me-1"></i> Modules:</strong> <?= htmlspecialchars(implode(', ', $day['modules'])) ?></p>
-                                            <p class="mb-2"><strong><i class="fas fa-clock me-1"></i> Duration:</strong> <?= htmlspecialchars($day['hours']) ?> hours</p>
-                                            <div class="alert alert-warning mb-0" style="background: rgba(184,134,11,0.1); border: 1px solid var(--gold-primary); color: var(--heading-color);">
+                                            <p class="timeline-item-meta mb-2"><strong><i class="fas fa-book me-1"></i> Modules:</strong> <?= htmlspecialchars(implode(', ', $day['modules'])) ?></p>
+                                            <p class="timeline-item-meta mb-2"><strong><i class="fas fa-clock me-1"></i> Duration:</strong> <?= htmlspecialchars($day['hours']) ?> hours</p>
+                                            <div class="timeline-tips">
                                                 <strong><i class="fas fa-lightbulb me-1"></i> Tips:</strong> <?= htmlspecialchars($day['tips']) ?>
                                             </div>
                                         </div>
@@ -208,11 +230,11 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
                             <?php endif; ?>
                         <?php else: ?>
                             <div class="empty-hero" style="margin-top:10px;">
-                                <div style="font-size:56px;color:rgba(184,134,11,0.35);margin-bottom:10px;">
+                                <div class="empty-hero-icon waiting">
                                     <i class="fas fa-robot"></i>
                                 </div>
-                                <div style="font-weight:900;color:var(--heading-color);margin-bottom:6px;">Waiting for generation</div>
-                                <div style="font-size:13px;">Click the button on the left to create your personalized study plan.</div>
+                                <div class="empty-hero-title">Waiting for generation</div>
+                                <div class="empty-hero-subtitle">Click the button on the left to create your personalized study plan.</div>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -222,19 +244,23 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
             <?php if (!empty($previous_plans)): ?>
                 <div class="panel-card p-4 mt-4">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="fas fa-clock-rotate-left" style="color:var(--gold-primary);"></i>
-                        <h3 class="m-0" style="font-family:'Playfair Display',serif;font-weight:800;color:var(--heading-color);">Recent Plans</h3>
+                        <i class="fas fa-clock-rotate-left recent-plans-icon"></i>
+                        <h3 class="m-0 recent-plans-title">Recent Plans</h3>
                     </div>
 
                     <div class="row g-3">
                         <?php foreach ($previous_plans as $idx => $plan): ?>
+                            <?php $plan_number = $total_plans_count - $idx; ?>
                             <div class="col-md-4">
                                 <div class="plan-card">
                                     <div class="plan-meta"><i class="fas fa-calendar me-1"></i><?= htmlspecialchars(date('M j, Y • H:i', strtotime($plan['created_at']))) ?></div>
-                                    <h5 class="mt-2">Study Plan <?= (int)($idx + 1) ?></h5>
+                                    <h5 class="mt-2">Study Plan <?= (int)$plan_number ?></h5>
                                     <div class="d-flex gap-2 mt-3">
                                         <a href="generate_plan.php?view_plan=<?= $plan['id'] ?>" class="btn btn-outline-secondary flex-grow-1">
                                             <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                        <a href="tasks.php?plan=<?= $plan['id'] ?>" class="btn btn-view-tasks flex-grow-1">
+                                            <i class="fas fa-tasks me-1"></i>Tasks
                                         </a>
                                         <form method="POST" style="margin: 0;" class="delete-plan-form">
                                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
@@ -256,42 +282,6 @@ $previous_plans = get_recent_study_plans($pdo, $user_id);
 </div>
 
 <script src="js/generate_plan.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    let selectedModuleIds = [];
-    function toggleModule(element, id) {
-        const index = selectedModuleIds.indexOf(id);
-        if (index > -1) {
-            selectedModuleIds.splice(index, 1);
-            element.style.borderColor = 'var(--border-color)';
-            element.style.boxShadow = 'none';
-        } else {
-            selectedModuleIds.push(id);
-            element.style.borderColor = 'var(--gold-primary)';
-            element.style.boxShadow = '0 0 0 2px rgba(184, 134, 11, 0.2)';
-        }
-        document.getElementById('selectedModules').value = selectedModuleIds.join(',');
-        document.getElementById('selectedCount').textContent = selectedModuleIds.length;
-    }
-
-    function confirmDelete(button) {
-        Swal.fire({
-            title: 'Delete Confirmation',
-            text: "Are you sure you want to delete this item? This action cannot be undone.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Delete',
-            cancelButtonText: 'Cancel',
-            background: '#ffffff',
-            color: '#1a1a1a'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                button.closest('form').submit();
-            }
-        });
-    }
-</script>
-</body>
+    <script src="js/generate-plan-modules.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </html>

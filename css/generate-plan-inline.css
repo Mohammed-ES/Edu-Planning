@@ -1,0 +1,182 @@
+/* Generate Plan Inline Styles - Extracted for Maintainability */
+
+/* ========================================
+   TOP NAVBAR
+   ======================================== */
+.generate-plan-greeting {
+  font-weight: 500;
+}
+
+.generate-plan-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--gold-primary), var(--gold-light));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--heading-color);
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* ========================================
+   PAGE HEADER
+   ======================================== */
+.plan-title {
+  font-family: "Playfair Display", serif;
+  font-weight: 900;
+  color: var(--heading-color);
+  margin: 0;
+  font-size: 42px;
+}
+
+.plan-subtitle {
+  margin-top: 8px;
+  color: var(--text-muted);
+}
+
+/* ========================================
+   RECENT PLANS SECTION
+   ======================================== */
+.recent-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.plan-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--card-background);
+  transition: all 0.3s ease;
+}
+
+.plan-card:hover {
+  border-color: var(--gold-primary);
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.15);
+  transform: translateY(-2px);
+}
+
+.plan-card-date {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.plan-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin-bottom: 12px;
+  word-break: break-word;
+}
+
+.plan-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.plan-card .btn-view-tasks {
+  background: rgba(184, 134, 11, 0.1);
+  color: var(--gold-primary);
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+  flex: 1;
+  text-align: center;
+}
+
+.plan-card .btn-view-tasks:hover {
+  background: var(--gold-primary);
+  color: white;
+  text-decoration: none;
+}
+
+.plan-card .btn-outline-secondary {
+  background: transparent;
+  color: var(--heading-color);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+  flex: 1;
+  text-align: center;
+}
+
+.plan-card .btn-outline-secondary:hover {
+  background: var(--heading-color);
+  color: white;
+  border-color: var(--heading-color);
+  text-decoration: none;
+}
+
+.plan-card .btn-outline-danger {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s;
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+.plan-card .btn-outline-danger:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+  text-decoration: none;
+}
+
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+.empty-plans-message {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+}
+
+.empty-plans-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: var(--gold-light);
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 768px) {
+  .plan-title {
+    font-size: 32px;
+  }
+
+  .recent-plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-card-actions {
+    flex-direction: column;
+  }
+
+  .plan-card .btn-view-tasks,
+  .plan-card .btn-outline-secondary,
+  .plan-card .btn-outline-danger {
+    width: 100%;
+  }
+}

@@ -57,6 +57,45 @@ $user = $stmt->fetch();
 $username = htmlspecialchars($user['name'] ?? 'User');
 $initial = strtoupper(substr($username, 0, 1));
 
+// Get all study plans with their progress
+$stmt = $pdo->prepare("SELECT id, created_at FROM study_plans WHERE user_id = ? ORDER BY created_at DESC");
+$stmt->execute([$user_id]);
+$all_plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$plans_data = [];
+$plan_count = 0;
+foreach ($all_plans as $plan) {
+    $plan_count++;
+    $stmt = $pdo->prepare('
+        SELECT 
+            SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed,
+            COUNT(*) as total
+        FROM study_plan_tasks
+        WHERE plan_id = ? AND user_id = ?
+    ');
+    $stmt->execute([$plan['id'], $user_id]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    $completed = (int)($result['completed'] ?? 0);
+    $total = (int)($result['total'] ?? 0);
+    $percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
+    
+    $plans_data[] = [
+        'id' => $plan['id'],
+        'name' => 'Plan ' . $plan_count,
+        'percentage' => $percentage
+    ];
+}
+
+// Prepare module progress data
+$modules_progress_data = [];
+foreach ($modules as $module) {
+    $modules_progress_data[] = [
+        'name' => htmlspecialchars($module['module_name']),
+        'progress' => (int)$module['progress']
+    ];
+}
+
 // Calculate percentages for progress bars
 $total_progress = 0;
 foreach ($modules as $module_stats) {
@@ -90,6 +129,7 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
     <!-- Chart.js for progress chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/dashboard-inline.css">
 </head>
 <body>
 
@@ -137,8 +177,8 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
             <div class="top-navbar">
                 <h2 class="page-title m-0">Dashboard</h2>
                 <div class="d-flex align-items-center gap-3">
-                    <span style="font-weight: 500;">Hello, <?php echo $username; ?></span>
-                    <div style="width:40px;height:40px;background:linear-gradient(135deg, var(--gold-primary), var(--gold-light));border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--heading-color);font-weight:bold;font-size:16px;">
+                    <span class="navbar-user-greeting">Hello, <?php echo $username; ?></span>
+                    <div class="navbar-avatar">
                         <?php echo $initial; ?>
                     </div>
                 </div>
@@ -147,29 +187,29 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
             <div class="content-padding">
 
                 <!-- Stat Cards -->
-                <div class="row" style="gap: 5px; margin-bottom: 30px; display: flex; flex-wrap: wrap;">
-                    <div style="display: flex; flex: 0 0 calc(25% - 3.75px);">
+                <div class="stat-cards-row">
+                    <div class="stat-card-wrapper">
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fas fa-book-open"></i></div>
                             <div class="stat-value" data-count="<?php echo $total_modules; ?>">0</div>
                             <div class="stat-label">Total Modules</div>
                         </div>
                     </div>
-                    <div style="display: flex; flex: 0 0 calc(25% - 3.75px);">
+                    <div class="stat-card-wrapper">
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
                             <div class="stat-value" data-count="<?php echo $avg_progress; ?>">0</div>
                             <div class="stat-label">Avg Progress %</div>
                         </div>
                     </div>
-                    <div style="display: flex; flex: 0 0 calc(25% - 3.75px);">
+                    <div class="stat-card-wrapper">
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
                             <div class="stat-value" data-count="<?php echo $total_sessions; ?>">0</div>
                             <div class="stat-label">Planned Sessions</div>
                         </div>
                     </div>
-                    <div style="display: flex; flex: 0 0 calc(25% - 3.75px);">
+                    <div class="stat-card-wrapper">
                         <div class="stat-card">
                             <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                             <div class="stat-value" data-count="<?php echo $modules_completed; ?>">0</div>
@@ -180,14 +220,14 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
 
                 <!-- Charts Row -->
                 <div class="row g-4 mb-5">
-                    <!-- Doughnut Chart -->
+                    <!-- Module Progress Chart -->
                     <div class="col-lg-6">
                         <div class="diagram-card scroll-reveal">
                             <div class="section-header">
-                                <div class="section-logo"><i class="fas fa-chart-pie"></i></div>
-                                Module Mastery Overview
+                                <div class="section-logo"><i class="fas fa-chart-bar"></i></div>
+                                Module Progress
                             </div>
-                            <canvas id="progressChart" style="max-height: 300px;"></canvas>
+                            <canvas id="moduleProgressChart" class="chart-canvas"></canvas>
                         </div>
                     </div>
 
@@ -198,21 +238,21 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
                                 <div class="section-logo"><i class="fas fa-tasks"></i></div>
                                 Academic Milestones
                             </div>
-                            <div style="padding: 16px 0;">
-                                <div style="margin-bottom: 22px;">
-                                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
-                                        <span style="font-weight:600; color:var(--heading-color);">Average module progress</span>
-                                        <span style="font-weight:700; color:var(--gold-primary);"><?php echo $modules_pct; ?>%</span>
+                            <div class="progress-section">
+                                <div class="progress-section-item">
+                                    <div class="progress-labels">
+                                        <span class="progress-label-left">Average module progress</span>
+                                        <span class="progress-label-right"><?php echo $modules_pct; ?>%</span>
                                     </div>
                                     <div class="progress-bar-custom">
                                         <div class="progress-fill" style="background:linear-gradient(90deg,var(--gold-primary),var(--gold-light)); width:<?php echo $modules_pct; ?>%;"></div>
                                     </div>
                                 </div>
 
-                                <div style="margin-bottom: 22px;">
-                                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
-                                        <span style="font-weight:600; color:var(--heading-color);">Planned sessions</span>
-                                        <span style="font-weight:700; color:var(--gold-primary);"><?php echo $total_sessions; ?></span>
+                                <div class="progress-section-item">
+                                    <div class="progress-labels">
+                                        <span class="progress-label-left">Planned sessions</span>
+                                        <span class="progress-label-right"><?php echo $total_sessions; ?></span>
                                     </div>
                                     <div class="progress-bar-custom">
                                         <div class="progress-fill" style="background:linear-gradient(90deg,var(--gold-primary),var(--gold-mid)); width:<?php echo $sessions_pct; ?>%;"></div>
@@ -223,7 +263,18 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
                     </div>
                 </div>
 
-                <!-- Advanced Dashboard Structure -->
+                <!-- Your Study Tasks Progress -->
+                <div class="row g-4 mb-5">
+                    <div class="col-lg-12">
+                        <div class="diagram-card scroll-reveal">
+                            <div class="section-header">
+                                <div class="section-logo"><i class="fas fa-chart-line"></i></div>
+                                Your Study Tasks Progress
+                            </div>
+                            <canvas id="tasksProgressChart" class="chart-canvas-large"></canvas>
+                        </div>
+                    </div>
+                </div>
                 <div class="row g-4 mt-2 scroll-reveal">
                     <!-- Recent Plans -->
                     <div class="col-lg-6">
@@ -238,19 +289,19 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
                             $recent_plans = $stmt->fetchAll();
                             ?>
                             <?php if(empty($recent_plans)): ?>
-                                <div class="text-center text-muted mt-4 p-3" style="border: 1px dashed var(--border-color); border-radius: 8px;">
-                                    <i class="fas fa-check-double mb-2" style="font-size: 24px; color: var(--gold-light);"></i>
+                                <div class="text-center text-muted mt-4 p-3 empty-plans-state">
+                                    <i class="fas fa-check-double mb-2 empty-state-icon"></i>
                                     <p class="m-0">No recent plans generated.</p>
                                 </div>
                             <?php else: ?>
                                 <div class="list-group list-group-flush mt-3">
                                     <?php foreach($recent_plans as $idx => $plan): ?>
-                                    <div class="list-group-item d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--border-color); padding: 12px 0; background: transparent;">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center plan-item">
                                         <div>
-                                            <h6 class="m-0" style="font-weight: 700; color: var(--heading-color);">Study Plan <?= $idx + 1 ?></h6>
-                                            <small class="text-muted"><i class="fas fa-clock me-1"></i> <?= date('M j, Y • H:i', strtotime($plan['created_at'])) ?></small>
+                                            <h6 class="plan-item-title">Study Plan <?= $idx + 1 ?></h6>
+                                            <small class="plan-item-date"><i class="fas fa-clock me-1"></i> <?= date('M j, Y • H:i', strtotime($plan['created_at'])) ?></small>
                                         </div>
-                                        <a href="generate_plan.php?view_plan=<?= $plan['id'] ?>" class="btn btn-sm btn-outline-secondary" style="border-color: var(--border-color); color: var(--gold-primary);">
+                                        <a href="generate_plan.php?view_plan=<?= $plan['id'] ?>" class="btn btn-sm plan-view-btn">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                     </div>
@@ -268,23 +319,23 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
                                 My Modules
                             </div>
                             <?php if (empty($modules)): ?>
-                                <div class="empty-state text-center mt-4">
-                                    <i class="fas fa-inbox text-muted" style="font-size: 32px;"></i>
-                                    <h4 class="mt-3" style="font-family: 'Playfair Display', serif; font-size: 20px; color: var(--heading-color); font-weight: 700;">No modules added</h4>
+                                <div class="empty-modules-state mt-4">
+                                    <i class="fas fa-inbox text-muted empty-modules-icon"></i>
+                                    <h4 class="mt-3 empty-modules-title">No modules added</h4>
                                     <a href="modules/add.php" class="btn btn-primary mt-3 btn-sm">
                                         <i class="fas fa-plus me-1"></i>Add a module
                                     </a>
                                 </div>
                             <?php else: ?>
-                                <div class="row g-3 mt-2">
+                                <div class="module-cards-grid">
                                     <?php foreach (array_slice($modules, 0, 4) as $i => $mod): ?>
-                                        <div class="col-sm-6">
-                                            <div class="module-card p-3" style="border: 1px solid var(--border-color); border-radius: 8px; transition: all 0.2s;">
-                                                <div class="module-title" style="font-weight: 700; font-size: 14px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($mod['module_name']); ?></div>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span style="font-size: 12px; color: var(--text-muted);"><?= (int)$mod['progress'] ?>%</span>
-                                                    <a href="modules/view.php?id=<?php echo $mod['id']; ?>" style="font-size:12px; color:var(--gold-primary); font-weight:600; text-decoration:none;">
-                                                        View <i class="fas fa-arrow-right" style="font-size:10px;"></i>
+                                        <div>
+                                            <div class="module-item p-3">
+                                                <div class="module-title"><?php echo htmlspecialchars($mod['module_name']); ?></div>
+                                                <div class="module-item-row">
+                                                    <span class="module-progress-text"><?= (int)$mod['progress'] ?>%</span>
+                                                    <a href="modules/view.php?id=<?php echo $mod['id']; ?>" class="module-view-link">
+                                                        View <i class="fas fa-arrow-right module-arrow-icon"></i>
                                                     </a>
                                                 </div>
                                             </div>
@@ -293,7 +344,7 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
                                 </div>
                                 <?php if(count($modules) > 4): ?>
                                     <div class="text-center mt-3">
-                                        <a href="module.php" style="font-size: 13px; color: var(--gold-primary); font-weight: 600; text-decoration: none;">View all modules <i class="fas fa-long-arrow-alt-right"></i></a>
+                                        <a href="module.php" class="modules-view-all-link">View all modules <i class="fas fa-long-arrow-alt-right"></i></a>
                                     </div>
                                 <?php endif; ?>
                             <?php endif; ?>
@@ -311,6 +362,8 @@ $days_pct     = min(100, max(0, $days_remaining) * 5);
     <!-- Progress Chart Script -->
     <script>
         const DASHBOARD_AVG_PROGRESS = <?php echo isset($avg_progress) ? $avg_progress : 0; ?>;
+        const MODULE_PROGRESS_DATA = <?php echo json_encode($modules_progress_data); ?>;
+        const TASKS_PROGRESS_DATA = <?php echo json_encode($plans_data); ?>;
     </script>
     <script src="js/dashboard.js"></script>
 

@@ -53,6 +53,29 @@ CREATE TABLE study_plans (
 CREATE INDEX idx_study_plans_user_date ON study_plans (user_id, created_at DESC);
 
 -- ============================================================
+-- STUDY PLAN TASKS (Daily tasks from generated plans)
+-- ============================================================
+CREATE TABLE study_plan_tasks (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    plan_id        INT          NOT NULL,
+    user_id        INT          NOT NULL,
+    day_number     INT          NOT NULL,
+    day_name       VARCHAR(50)  NOT NULL,
+    task_date      DATE         NOT NULL,
+    modules        JSON         NOT NULL,
+    hours          INT          DEFAULT 0,
+    tips           TEXT,
+    completed      BOOLEAN      DEFAULT FALSE,
+    completed_at   TIMESTAMP    NULL,
+    created_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (plan_id) REFERENCES study_plans(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Index: tasks by user and plan for quick retrieval
+CREATE INDEX idx_tasks_user_plan ON study_plan_tasks (user_id, plan_id, day_number);
+
+-- ============================================================
 -- SEED DATA (for development / demo only)
 -- Remove these INSERT statements before production deploy.
 -- Password: "password123" (bcrypt, cost 10)

@@ -1,0 +1,225 @@
+/* Generate Plan - Additional Styles (extracted from inline) */
+
+/* ========================================
+   LEFT PANEL - Modules Selection
+   ======================================== */
+.modules-panel-icon {
+  color: var(--gold-primary);
+}
+
+.modules-panel-title {
+  font-family: "Playfair Display", serif;
+  font-weight: 800;
+  color: var(--heading-color);
+}
+
+.modules-list-container {
+  flex: 1;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.module-selector-item {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.module-selector-item.selected {
+  border-color: var(--gold-primary) !important;
+  box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.2);
+}
+
+.module-meta-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.modules-selected-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-top: 12px;
+}
+
+/* ========================================
+   RIGHT PANEL - Study Schedule
+   ======================================== */
+.schedule-panel-icon {
+  color: var(--gold-primary);
+}
+
+.schedule-panel-title {
+  font-family: "Playfair Display", serif;
+  font-weight: 800;
+  color: var(--heading-color);
+}
+
+.timeline-container {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.timeline-item {
+  border: 1px solid var(--border-color);
+  background: rgba(184, 134, 11, 0.03);
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
+.timeline-day-title {
+  color: var(--gold-primary);
+  font-family: "Playfair Display", serif;
+  font-weight: 700;
+}
+
+.timeline-item-meta {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.timeline-item-meta strong {
+  font-weight: 700;
+  color: var(--heading-color);
+}
+
+.timeline-tips {
+  background: rgba(184, 134, 11, 0.1);
+  border: 1px solid var(--gold-primary);
+  color: var(--heading-color);
+  border-radius: 6px;
+  padding: 12px;
+  margin: 0;
+}
+
+.timeline-tips strong {
+  font-weight: 700;
+}
+
+.timeline-tips i {
+  margin-right: 6px;
+  color: var(--gold-primary);
+}
+
+/* ========================================
+   EMPTY STATES
+   ======================================== */
+.empty-hero {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-hero-icon {
+  font-size: 56px;
+  color: rgba(184, 134, 11, 0.35);
+  margin-bottom: 10px;
+}
+
+.empty-hero-icon.waiting {
+  font-size: 56px;
+}
+
+.empty-hero-title {
+  font-weight: 900;
+  color: var(--heading-color);
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+.empty-hero-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ========================================
+   RECENT PLANS SECTION
+   ======================================== */
+.recent-plans-icon {
+  color: var(--gold-primary);
+}
+
+.recent-plans-title {
+  font-family: "Playfair Display", serif;
+  font-weight: 800;
+  color: var(--heading-color);
+}
+
+/* ========================================
+   PLAN OUTPUT
+   ======================================== */
+.plan-output {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.plan-output pre {
+  margin: 0;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 1024px) {
+  .timeline-container {
+    max-height: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modules-list-container {
+    max-height: 300px;
+    margin-bottom: 20px;
+  }
+
+  .timeline-container {
+    max-height: 400px;
+  }
+
+  .empty-hero {
+    padding: 30px 15px;
+  }
+
+  .empty-hero-icon {
+    font-size: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modules-list-container {
+    max-height: 250px;
+  }
+
+  .timeline-container {
+    max-height: 300px;
+  }
+
+  .timeline-item {
+    margin-bottom: 10px;
+  }
+
+  .empty-hero {
+    padding: 20px 10px;
+  }
+
+  .empty-hero-icon {
+    font-size: 36px;
+  }
+
+  .empty-hero-title {
+    font-size: 14px;
+  }
+
+  .empty-hero-subtitle {
+    font-size: 12px;
+  }
+}
