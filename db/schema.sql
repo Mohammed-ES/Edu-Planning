@@ -75,17 +75,6 @@ CREATE TABLE study_plan_tasks (
 -- Index: tasks by user and plan for quick retrieval
 CREATE INDEX idx_tasks_user_plan ON study_plan_tasks (user_id, plan_id, day_number);
 
--- ============================================================
--- SEED DATA (for development / demo only)
--- Remove these INSERT statements before production deploy.
--- Password: "password123" (bcrypt, cost 10)
--- ============================================================
-INSERT INTO users (id, name, email, password)
-VALUES
-(1, 'Mohammed', 'mohammed@exaplanner.com', '$2y$10$DEtn8wX8X3JlSoWS/D9gi.DufLOP6UYy06sKrGW3ELaNl2mBUPQ4C');
 
-INSERT INTO modules (user_id, module_name, teacher, difficulty, career_importance, progress, understanding_level, exam_date)
-VALUES
-(1, 'WEB TECHNIQUES', 'PROF. HOURRI', 'HARD',   'HIGH',   40, 'MEDIUM', '2026-06-10'),
 (1, 'ALGORITHMS',     'AHMED',        'MEDIUM',  'HIGH',   55, 'MEDIUM', '2026-06-15'),
 (1, 'DATABASE',       'HAMZANE',      'MEDIUM',  'MEDIUM', 60, 'MEDIUM', '2026-06-18');
