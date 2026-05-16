@@ -1,200 +1,99 @@
-# Edu-Planning — AI-Powered Academic Platform
+# Edu-Planning — Intelligent Academic Platform
 
-> Intelligent study planning for students of Université Cadi Ayyad, Marrakech.
+Edu-Planning is a modern, AI-powered academic workspace engineered specifically for Université Cadi Ayyad (UCA) students. The platform replaces fragmented notes and scattered deadlines with a unified, intelligent dashboard that keeps students in complete control of their educational journey.
 
-Edu-Planning is a full-stack SaaS web application that combines a PHP/MySQL backend with a Node.js Gemini AI microservice to generate personalized, 7-day revision schedules based on a student's module data, exam dates, difficulty, and current progress.
+## 🌟 Key Features
 
----
+*   **Smart Module Tracking:** Centralize coursework, monitor difficulty levels, track comprehension, and manage the academic pipeline in one intuitive dashboard.
+*   **Adaptive AI Planning:** Generates highly personalized 7-day revision schedules using Google Gemini and Open Router (with automatic fallback), adapting to study pace and ensuring optimal focus for upcoming deadlines.
+*   **Visual Analytics:** Interactive charts and progress indicators (powered by Chart.js) provide immediate insights into academic performance.
+*   **Premium User Experience:** A dynamic UI with glassmorphism elements, custom mouse followers, 3D interactive elements (Three.js), and smooth CSS/JS animations for a high-end feel.
+*   **Deadline Management:** Prioritizes upcoming exams and milestones to ensure focus is always directed where it matters most.
+*   **Secure Profiles:** Total control over academic data with robust user authentication and personalized profile management.
 
-## Features
+## 🏗️ Architecture & Technology Stack
 
-- 🎓 **Module Tracking** — Add, edit, and monitor all your academic modules
-- 🤖 **AI Study Plans** — Generate personalized 7-day schedules powered by Google Gemini
-- 📅 **Revision Calendar** — Visualize your study schedule by month
-- 🔐 **Secure Auth** — CSRF protection, session fixation prevention, brute-force rate limiting
-- 📊 **Dashboard Analytics** — Real-time progress charts and module mastery overview
-- 👤 **User Profiles** — Update name, email, and password
+The project utilizes a decoupled client-server approach with a PHP-driven frontend/backend for the user portal and an isolated Node.js/Express service for AI interactions.
 
----
+### Technologies Used
 
-## Tech Stack
+| Category | Technology | Usage |
+| :--- | :--- | :--- |
+| **Frontend Core** | HTML5, CSS3, Vanilla JS | Structure, styling, and client-side logic |
+| **CSS Framework** | Bootstrap 5.3, Tailwind CSS | Responsive grid, utility classes, UI components |
+| **Design System** | Glassmorphism, Custom CSS | Modern professional aesthetic (dark/gold) |
+| **3D & Analytics** | Three.js, Chart.js | 3D object rendering, Progress charts |
+| **Backend Core** | PHP 8+ | Routing, authentication, CRUD operations |
+| **Database** | MySQL / MariaDB | Persistent storage via PDO |
+| **AI Microservice**| Node.js, Express.js | API gateway for handling AI generation |
+| **AI Providers** | Google Gemini, Open Router | Generative AI models (gemini-2.5-flash, gpt-3.5-turbo) |
 
-| Layer      | Technology                                |
-| ---------- | ----------------------------------------- |
-| Frontend   | HTML, CSS (Vanilla), Bootstrap 5          |
-| Backend    | PHP 8.1+, PDO                             |
-| Database   | MySQL 8+ (MariaDB compatible)             |
-| AI Service | Node.js 20+, Express 5, Google Gemini API |
-| Auth       | PHP Sessions, CSRF tokens                 |
+### Frontend
+*   **Core:** HTML5, CSS3, JavaScript (Vanilla JS for custom logic).
+*   **Styling:** Custom CSS with a "Modern Professional" aesthetic (dark/gold accents, elegant typography), complemented by Bootstrap 5.3 for responsive grid layouts.
+*   **Typography:** Playfair Display, Inter, Roboto, and Cormorant Garamond.
+*   **Libraries:** 
+    *   **Three.js:** For rendering 3D STL objects on the landing page.
+    *   **Chart.js:** For rendering module and task progress analytics in the dashboard.
+    *   **FontAwesome:** For vector icons.
 
----
+### Backend (Core Application)
+*   **Language:** PHP 8+
+*   **Database:** MySQL / MariaDB (managed via PDO in `include/config.php` and `include/connectiondb.php`).
+*   **Routing & Logic:** Procedural PHP spread across feature-specific endpoints:
+    *   `index.php` - Landing page
+    *   `dashboard.php` - Main user hub
+    *   `module.php`, `modules/` - Module CRUD operations
+    *   `planning.php`, `tasks.php`, `generate_plan.php` - Schedule management
+    *   `login.php`, `register.php`, `logout.php` - Authentication (`include/auth.php`)
 
-## Prerequisites
+### AI Microservice
+*   **Environment:** Node.js, Express.js (`server.js`)
+*   **AI Integration:** `@google/generative-ai` SDK using the `gemini-2.5-flash` model.
+*   **Security:** Internal authentication middleware requiring a Bearer token (`INTERNAL_API_SECRET`) to prevent unauthorized external requests. Rate limiting (max 10 requests per 15 mins per IP).
+*   **Functionality:** Receives module metadata (difficulty, progress, exam dates) and returns a structured JSON 7-day study schedule with allocated priorities and session lengths.
 
-- **PHP** 8.1 or higher (with `pdo_mysql`, `curl` extensions)
-- **MySQL** 8.0+ or **MariaDB** 10.6+
-- **Node.js** 20+ and npm
-- **XAMPP** (or Apache + MySQL for local dev)
-- A **Google Gemini API Key** — [Get one here](https://aistudio.google.com/)
+## 📂 Project Structure
 
----
-
-## Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/Edu-Planning-v1.git
-cd Edu-Planning-v1
+```text
+c:\xampp\htdocs\Edu-Planning\
+├── .env                # Environment variables (DB creds, Gemini API Key)
+├── server.js           # Node.js API server for Gemini integration
+├── package.json        # Node dependencies
+├── index.php           # Public landing page
+├── Welcome.php         # Intro animation screen
+├── dashboard.php       # Protected user dashboard
+├── module.php          # Module overview
+├── planning.php        # Study plans overview
+├── generate_plan.php   # AI Plan generation interface
+├── tasks.php           # Task management
+├── login.php           # User login
+├── register.php        # User registration
+├── include/            # Backend configuration & auth logic
+│   ├── auth.php
+│   ├── config.php
+│   └── connectiondb.php
+├── modules/            # Detailed module views (add, edit, view)
+├── assets/             # Images, 3D icons (.stl)
+├── css/                # Stylesheets (index.css, dashboard.css, etc.)
+└── js/                 # Client-side scripts (app.js, dashboard.js, etc.)
 ```
 
-### 2. Configure environment variables
+## ⚙️ Installation & Setup
 
-```bash
-cp .env.example .env
-```
-
-Open `.env` and fill in your values:
-
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASS=your_db_password
-DB_NAME=edu_planning
-
-GEMINI_API_KEY=your_gemini_api_key_here
-INTERNAL_API_SECRET=your_strong_random_secret_here
-
-PORT=3001
-```
-
-> ⚠️ **Never commit `.env` to version control.** It is already in `.gitignore`.
-
-### 3. Set up the database
-
-Import the schema using XAMPP phpMyAdmin or the command line:
-
-```bash
-mysql -u root -p < db/schema.sql
-```
-
-> **Note:** The schema includes demo seed data for development. Remove the `INSERT INTO` statements at the bottom of `schema.sql` before deploying to production.
-
-### 4. Install Node.js dependencies
-
-```bash
-npm install
-```
-
-### 5. Start the AI backend server
-
-```bash
-npm start
-# or for development with auto-reload:
-npm run dev
-```
-
-The Node.js server will run at `http://127.0.0.1:3001` (internal only).
-
-### 6. Configure PHP web server
-
-Place the project folder inside your XAMPP `htdocs` directory (or your Apache web root).
-
-Access the app at: `http://localhost/Edu-Planning-v1/`
-
----
-
-## Project Structure
-
-```
-Edu-Planning-v1/
-├── assets/
-│   └── images/           # Static images & 3D assets
-├── css/                  # Per-page stylesheets
-│   ├── index.css
-│   ├── login.css
-│   ├── register.css
-│   ├── dashboard.css
-│   ├── dashboard-inline.css      # Extracted dashboard styles
-│   ├── module.css
-│   ├── modules_add.css
-│   ├── modules_edit.css
-│   ├── modules_view.css
-│   ├── generate_plan.css
-│   ├── generate-plan-inline.css  # Extracted generate plan header/cards
-│   ├── generate-plan-schedule.css # Extracted module panel + timeline
-│   ├── planning.css
-│   ├── planning-modal.css        # Extracted exam modal styles
-│   ├── profile.css
-│   ├── welcome.css
-│   ├── animations.css
-│   └── style.css
-├── db/
-│   └── schema.sql        # Database schema with indexes
-├── include/
-│   ├── auth.php          # Session, CSRF, brute-force protection
-│   ├── ai_api.php        # Gemini API client (PHP → Gemini REST)
-│   ├── config.php        # DB connection, env loading, security headers
-│   └── connectiondb.php  # Thin wrapper (delegates to config.php)
-├── js/                   # Per-page JavaScript modules
-│   ├── app.js
-│   ├── index.js
-│   ├── dashboard.js
-│   ├── planning.js
-│   ├── planning-exams.js         # Extracted exam modal functions
-│   ├── generate_plan.js
-│   ├── generate-plan-modules.js  # Extracted module selection logic
-│   ├── module.js
-│   ├── modules-shared.js
-│   ├── login.js
-│   └── welcome.js
-├── modules/              # Module CRUD sub-pages
-│   ├── _bootstrap.php    # Shared auth + helpers for module pages
-│   ├── add.php
-│   ├── edit.php
-│   ├── view.php
-│   └── delete.php
-├── dashboard.php
-├── generate_plan.php
-├── index.php             # Public landing page
-├── login.php
-├── logout.php
-├── module.php
-├── planning.php
-├── profile.php
-├── register.php
-├── tasks.php             # Study plan tasks & progress view
-├── server.js             # Node.js Express + Gemini AI microservice
-├── Welcome.php           # Animated entry screen
-├── package.json
-├── .env.example          # Environment variable template
-└── .gitignore
-```
-
----
-
-## Security
-
-- All POST forms are protected by CSRF tokens
-- Login is rate-limited (5 attempts per IP per 15 minutes)
-- Sessions are regenerated on login (prevents session fixation)
-- The Node.js AI API is only accessible via `127.0.0.1` with an internal Bearer token
-- Security headers are sent on every PHP response (X-Frame-Options, X-Content-Type-Options, etc.)
-- Passwords are hashed with bcrypt
-- All user input is sanitized with `htmlspecialchars()` before rendering
-
----
-
-## Development Notes
-
-- The **PHP backend** calls Gemini directly via the REST API (no Node.js required for basic functionality).
-- The **Node.js server** (`server.js`) is an optional microservice for future use cases.
-- `css/style.css` is a legacy file — verify before removing.
-- `css/animations.css` is referenced in comments but not linked in any page.
-
----
-
-## License
-
-MIT © 2026 Université Cadi Ayyad — Edu-Planning Project
+1. **Database Setup:** 
+   Import the SQL schema to your MySQL/MariaDB server and configure the connection details in the `.env` file and/or `include/config.php`.
+2. **Environment Variables:**
+   Create a `.env` file based on `.env.example`:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   INTERNAL_API_SECRET=your_secure_random_string
+   PORT=3001
+   ```
+3. **Node Dependencies:**
+   Run `npm install` to install Express, dotenv, and the Google Generative AI SDK.
+4. **Start the AI Server:**
+   Run `npm start` (or `npm run dev` for watch mode) to launch the Gemini microservice on `http://127.0.0.1:3001`.
+5. **Serve the PHP Application:**
+   Host the directory using XAMPP/Apache. Ensure the server is pointed to the project root.
+6. **Access:** Navigate to `http://localhost/Edu-Planning/`.
