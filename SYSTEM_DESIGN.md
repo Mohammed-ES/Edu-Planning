@@ -25,14 +25,14 @@ Edu-Planning is a **multi-tier SaaS web application** that provides AI-generated
 
 ### Core Capabilities
 
-| Capability | Implementation |
-|-----------|---------------|
+| Capability          | Implementation                                |
+| ------------------- | --------------------------------------------- |
 | User Authentication | PHP sessions + CSRF tokens + bcrypt passwords |
-| Module Management | Full CRUD via PHP/PDO + MySQL |
-| AI Plan Generation | PHP → Google Gemini REST API (direct call) |
-| Study Calendar | Vanilla JS calendar rendering exam dates |
-| Dashboard Analytics | Chart.js doughnut + progress bars |
-| Animated Entry | Canvas particles + CSS animations |
+| Module Management   | Full CRUD via PHP/PDO + MySQL                 |
+| AI Plan Generation  | PHP → Google Gemini REST API (direct call)    |
+| Study Calendar      | Vanilla JS calendar rendering exam dates      |
+| Dashboard Analytics | Chart.js doughnut + progress bars             |
+| Animated Entry      | Canvas particles + CSS animations             |
 
 ---
 
@@ -97,27 +97,33 @@ css/
 ├── register.css       Auth pages
 ├── dashboard.css      Dashboard (sidebar, stat cards, charts)
 ├── module.css         Module list (card grid)
-├── modules_add.css    Add module form
-├── modules_edit.css   Edit module form
-├── modules_view.css   Module detail view
-├── generate_plan.css  AI plan generator
-├── planning.css       Calendar view
-├── profile.css        User profile
-├── welcome.css        Animated entry screen
-├── animations.css     Shared animation keyframes
-└── style.css          Legacy global styles
+├── modules_add.css         Add module form
+├── modules_edit.css        Edit module form
+├── modules_view.css        Module detail view
+├── dashboard-inline.css    ✨ REFACTORED: Avatar, stat cards, progress
+├── generate_plan.css       AI plan generator
+├── generate-plan-inline.css ✨ REFACTORED: Header avatar, plan title/cards
+├── generate-plan-schedule.css ✨ REFACTORED: Module panel, timeline
+├── planning.css            Calendar view
+├── planning-modal.css      ✨ REFACTORED: Exam modal info grid + badges
+├── profile.css             User profile
+├── welcome.css             Animated entry screen
+├── animations.css          Shared animation keyframes
+└── style.css               Legacy global styles
 
 js/
-├── app.js             Master JS: scroll reveal, counters, cursor,
-│                      particles, welcome screen, form validation
-├── index.js           Landing page smooth scroll
-├── dashboard.js       Chart.js doughnut chart init
-├── planning.js        Vanilla JS calendar engine
-├── generate_plan.js   Plan output helper
-├── module.js          Module list delete confirmation
-├── modules-shared.js  Shared delete dialog (view + edit pages)
-├── login.js           Session storage reset on login page
-└── welcome.js         Welcome screen particle canvas + animation
+├── app.js                  Master JS: scroll reveal, counters, cursor,
+│                           particles, welcome screen, form validation
+├── index.js                Landing page smooth scroll
+├── dashboard.js            Chart.js doughnut chart init
+├── planning.js             Vanilla JS calendar engine
+├── planning-exams.js       ✨ REFACTORED: showExamDetails(), exam modal
+├── generate_plan.js        Plan output helper
+├── generate-plan-modules.js ✨ REFACTORED: toggleModule(), confirmDelete()
+├── module.js               Module list delete confirmation
+├── modules-shared.js       Shared delete dialog (view + edit pages)
+├── login.js                Session storage reset on login page
+└── welcome.js              Welcome screen particle canvas + animation
 ```
 
 ### 3.2 Backend Layer (PHP)
@@ -138,6 +144,7 @@ modules/view    /modules/view   YES             Module detail
 modules/delete  /modules/delete YES (POST only) Delete module (CSRF)
 planning.php    /planning.php   YES             Calendar view
 generate_plan   /generate_plan  YES             Generate + view + delete plans
+tasks.php       /tasks.php      YES             View plan tasks & progress
 profile.php     /profile.php    YES             Edit profile + password
 ```
 
@@ -322,38 +329,41 @@ PHP page loads
 ### 5.2 Table Details
 
 #### `users`
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| id | INT | PK, AUTO_INCREMENT | — |
-| name | VARCHAR(100) | NOT NULL | Display name |
-| email | VARCHAR(100) | NOT NULL, UNIQUE | Login identifier |
-| password | VARCHAR(255) | NOT NULL | bcrypt hash (cost 10+) |
-| created_at | TIMESTAMP | DEFAULT NOW() | Member since |
+
+| Column     | Type         | Constraints        | Notes                  |
+| ---------- | ------------ | ------------------ | ---------------------- |
+| id         | INT          | PK, AUTO_INCREMENT | —                      |
+| name       | VARCHAR(100) | NOT NULL           | Display name           |
+| email      | VARCHAR(100) | NOT NULL, UNIQUE   | Login identifier       |
+| password   | VARCHAR(255) | NOT NULL           | bcrypt hash (cost 10+) |
+| created_at | TIMESTAMP    | DEFAULT NOW()      | Member since           |
 
 #### `modules`
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| id | INT | PK, AUTO_INCREMENT | — |
-| user_id | INT | FK → users.id, CASCADE | Owner |
-| module_name | VARCHAR(150) | NOT NULL | Subject name |
-| teacher | VARCHAR(100) | NULL | Optional |
-| difficulty | ENUM('EASY','MEDIUM','HARD') | NOT NULL | AI priority input |
-| career_importance | ENUM('LOW','MEDIUM','HIGH') | NOT NULL | AI priority input |
-| progress | INT | DEFAULT 0, CHECK 0-100 | Study progress % |
-| understanding_level | ENUM('LOW','MEDIUM','HIGH') | NOT NULL | AI priority input |
-| exam_date | DATE | NOT NULL | Drives AI prioritization |
-| created_at | TIMESTAMP | DEFAULT NOW() | — |
+
+| Column              | Type                         | Constraints            | Notes                    |
+| ------------------- | ---------------------------- | ---------------------- | ------------------------ |
+| id                  | INT                          | PK, AUTO_INCREMENT     | —                        |
+| user_id             | INT                          | FK → users.id, CASCADE | Owner                    |
+| module_name         | VARCHAR(150)                 | NOT NULL               | Subject name             |
+| teacher             | VARCHAR(100)                 | NULL                   | Optional                 |
+| difficulty          | ENUM('EASY','MEDIUM','HARD') | NOT NULL               | AI priority input        |
+| career_importance   | ENUM('LOW','MEDIUM','HIGH')  | NOT NULL               | AI priority input        |
+| progress            | INT                          | DEFAULT 0, CHECK 0-100 | Study progress %         |
+| understanding_level | ENUM('LOW','MEDIUM','HIGH')  | NOT NULL               | AI priority input        |
+| exam_date           | DATE                         | NOT NULL               | Drives AI prioritization |
+| created_at          | TIMESTAMP                    | DEFAULT NOW()          | —                        |
 
 **Index:** `idx_modules_user_exam (user_id, exam_date ASC)`
 → Optimizes the most frequent query: all modules for a user sorted by upcoming exam
 
 #### `study_plans`
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| id | INT | PK, AUTO_INCREMENT | — |
-| user_id | INT | FK → users.id, CASCADE | Owner |
-| generated_plan | TEXT | — | Full JSON from Gemini |
-| created_at | TIMESTAMP | DEFAULT NOW() | — |
+
+| Column         | Type      | Constraints            | Notes                 |
+| -------------- | --------- | ---------------------- | --------------------- |
+| id             | INT       | PK, AUTO_INCREMENT     | —                     |
+| user_id        | INT       | FK → users.id, CASCADE | Owner                 |
+| generated_plan | TEXT      | —                      | Full JSON from Gemini |
+| created_at     | TIMESTAMP | DEFAULT NOW()          | —                     |
 
 **Index:** `idx_study_plans_user_date (user_id, created_at DESC)`
 → Optimizes dashboard "recent plans" query
@@ -435,40 +445,44 @@ On POST:
 
 These are standard PHP pages, not a REST API. All protected by session auth.
 
-| Method | URL | Auth | Action |
-|--------|-----|------|--------|
-| GET | `/index.php?welcome` | No | Landing page |
-| POST | `/login.php` | No | Authenticate user |
-| POST | `/register.php` | No | Create account |
-| GET | `/logout.php` | Session | Destroy session |
-| GET | `/dashboard.php` | Session | Dashboard stats |
-| GET | `/module.php` | Session | Module list |
-| GET/POST | `/modules/add.php` | Session+CSRF | Create module |
-| GET/POST | `/modules/edit.php?id=N` | Session+CSRF | Update module |
-| GET | `/modules/view.php?id=N` | Session | View module |
-| POST | `/modules/delete.php` | Session+CSRF | Delete module |
-| GET | `/planning.php` | Session | Calendar |
-| GET/POST | `/generate_plan.php` | Session+CSRF | AI plan |
-| GET | `/generate_plan.php?view_plan=N` | Session | View saved plan |
-| GET/POST | `/profile.php` | Session+CSRF | Edit profile |
+| Method   | URL                              | Auth         | Action            |
+| -------- | -------------------------------- | ------------ | ----------------- |
+| GET      | `/index.php?welcome`             | No           | Landing page      |
+| POST     | `/login.php`                     | No           | Authenticate user |
+| POST     | `/register.php`                  | No           | Create account    |
+| GET      | `/logout.php`                    | Session      | Destroy session   |
+| GET      | `/dashboard.php`                 | Session      | Dashboard stats   |
+| GET      | `/module.php`                    | Session      | Module list       |
+| GET/POST | `/modules/add.php`               | Session+CSRF | Create module     |
+| GET/POST | `/modules/edit.php?id=N`         | Session+CSRF | Update module     |
+| GET      | `/modules/view.php?id=N`         | Session      | View module       |
+| POST     | `/modules/delete.php`            | Session+CSRF | Delete module     |
+| GET      | `/planning.php`                  | Session      | Calendar          |
+| GET/POST | `/generate_plan.php`             | Session+CSRF | AI plan           |
+| GET      | `/generate_plan.php?view_plan=N` | Session      | View saved plan   |
+| GET/POST | `/profile.php`                   | Session+CSRF | Edit profile      |
 
 ### 7.2 Node.js REST API (server.js)
 
 Base URL: `http://127.0.0.1:3001` (internal only)
 
 #### `GET /health`
+
 ```json
 { "status": "Gemini API OK", "timestamp": "2026-05-10T14:30:00.000Z" }
 ```
 
 #### `POST /api/generate-plan`
+
 **Headers required:**
+
 ```
 Authorization: Bearer <INTERNAL_API_SECRET>
 Content-Type: application/json
 ```
 
 **Request body:**
+
 ```json
 {
   "modules": [
@@ -486,6 +500,7 @@ Content-Type: application/json
 ```
 
 **Success response (200):**
+
 ```json
 {
   "success": true,
@@ -513,6 +528,7 @@ Content-Type: application/json
 ```
 
 **Error responses:**
+
 ```
 400 — { "error": "Invalid format: non-empty 'modules' array required" }
 401 — { "error": "Unauthorized" }
@@ -597,6 +613,7 @@ Edu-Planning-v1/
 ├── module.php              ← Module list (protected)
 ├── planning.php            ← Calendar view (protected)
 ├── generate_plan.php       ← AI plan generator (protected)
+├── tasks.php               ← Study plan tasks & progress (protected)
 └── profile.php             ← User profile (protected)
 ```
 
@@ -605,18 +622,19 @@ Edu-Planning-v1/
 ## 9. Scalability Considerations
 
 ### Current State (Single Server)
+
 The current architecture is suitable for **~100–500 concurrent users** on a single XAMPP/Apache server.
 
 ### Bottlenecks & Mitigation
 
-| Bottleneck | Impact | Mitigation |
-|-----------|--------|-----------|
-| Gemini API latency (1–10s per call) | User waits on page load | Add async generation + polling, or WebSocket streaming |
-| No AI response caching | Same query hits API repeatedly | Cache plans by hash(modules) in APCu or Redis |
-| Session-based rate limiting | Resets if server restarts | Move rate limit state to Redis or DB table |
-| No per-user AI quota | Unlimited API calls per user | Add daily_ai_calls counter to users table |
-| Single DB server | Failure = full outage | Add read replica + connection pool (PgBouncer / ProxySQL) |
-| PHP synchronous cURL | Blocks PHP worker thread during AI call | Use ReactPHP or offload to Node.js queue |
+| Bottleneck                          | Impact                                  | Mitigation                                                |
+| ----------------------------------- | --------------------------------------- | --------------------------------------------------------- |
+| Gemini API latency (1–10s per call) | User waits on page load                 | Add async generation + polling, or WebSocket streaming    |
+| No AI response caching              | Same query hits API repeatedly          | Cache plans by hash(modules) in APCu or Redis             |
+| Session-based rate limiting         | Resets if server restarts               | Move rate limit state to Redis or DB table                |
+| No per-user AI quota                | Unlimited API calls per user            | Add daily_ai_calls counter to users table                 |
+| Single DB server                    | Failure = full outage                   | Add read replica + connection pool (PgBouncer / ProxySQL) |
+| PHP synchronous cURL                | Blocks PHP worker thread during AI call | Use ReactPHP or offload to Node.js queue                  |
 
 ### Future Scaling Path
 
@@ -696,4 +714,4 @@ PORT=3001
 
 ---
 
-*Document maintained alongside the codebase. Update this file when making architectural changes.*
+_Document maintained alongside the codebase. Update this file when making architectural changes._

@@ -19,13 +19,13 @@ Edu-Planning is a full-stack SaaS web application that combines a PHP/MySQL back
 
 ## Tech Stack
 
-| Layer      | Technology                         |
-|------------|------------------------------------|
-| Frontend   | HTML, CSS (Vanilla), Bootstrap 5   |
-| Backend    | PHP 8.1+, PDO                      |
-| Database   | MySQL 8+ (MariaDB compatible)      |
+| Layer      | Technology                                |
+| ---------- | ----------------------------------------- |
+| Frontend   | HTML, CSS (Vanilla), Bootstrap 5          |
+| Backend    | PHP 8.1+, PDO                             |
+| Database   | MySQL 8+ (MariaDB compatible)             |
 | AI Service | Node.js 20+, Express 5, Google Gemini API |
-| Auth       | PHP Sessions, CSRF tokens          |
+| Auth       | PHP Sessions, CSRF tokens                 |
 
 ---
 
@@ -112,6 +112,24 @@ Edu-Planning-v1/
 ├── assets/
 │   └── images/           # Static images & 3D assets
 ├── css/                  # Per-page stylesheets
+│   ├── index.css
+│   ├── login.css
+│   ├── register.css
+│   ├── dashboard.css
+│   ├── dashboard-inline.css      # Extracted dashboard styles
+│   ├── module.css
+│   ├── modules_add.css
+│   ├── modules_edit.css
+│   ├── modules_view.css
+│   ├── generate_plan.css
+│   ├── generate-plan-inline.css  # Extracted generate plan header/cards
+│   ├── generate-plan-schedule.css # Extracted module panel + timeline
+│   ├── planning.css
+│   ├── planning-modal.css        # Extracted exam modal styles
+│   ├── profile.css
+│   ├── welcome.css
+│   ├── animations.css
+│   └── style.css
 ├── db/
 │   └── schema.sql        # Database schema with indexes
 ├── include/
@@ -120,6 +138,17 @@ Edu-Planning-v1/
 │   ├── config.php        # DB connection, env loading, security headers
 │   └── connectiondb.php  # Thin wrapper (delegates to config.php)
 ├── js/                   # Per-page JavaScript modules
+│   ├── app.js
+│   ├── index.js
+│   ├── dashboard.js
+│   ├── planning.js
+│   ├── planning-exams.js         # Extracted exam modal functions
+│   ├── generate_plan.js
+│   ├── generate-plan-modules.js  # Extracted module selection logic
+│   ├── module.js
+│   ├── modules-shared.js
+│   ├── login.js
+│   └── welcome.js
 ├── modules/              # Module CRUD sub-pages
 │   ├── _bootstrap.php    # Shared auth + helpers for module pages
 │   ├── add.php
@@ -135,6 +164,7 @@ Edu-Planning-v1/
 ├── planning.php
 ├── profile.php
 ├── register.php
+├── tasks.php             # Study plan tasks & progress view
 ├── server.js             # Node.js Express + Gemini AI microservice
 ├── Welcome.php           # Animated entry screen
 ├── package.json
